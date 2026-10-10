@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>iTunes プレイリスト印刷ツール</title>
+    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; padding: 15px; }
+        .container { max-width: 1600px; margin: 0 auto; background: #1e1e1e; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        h1 { font-size: 22px; margin-bottom: 8px; color: #ffffff; text-align: center; }
+        .subtitle { text-align: center; color: #a0a0a0; font-size: 13px; margin-bottom: 25px; }
+        
+        /* Dropzones Container */
+        .dropzones-wrapper { display: flex; gap: 15px; margin-bottom: 20px; }
+        .drop-zone { flex: 1; border: 2px dashed #555; border-radius: 8px; padding: 20px; text-align: center; background: #252525; cursor: pointer; transition: 0.3s; }
+        
+        /* メインエリア */
+        .drop-zone.main-zone { border-color: #38bdf8; background: #0c2136; box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.15); }
+        .drop-zone.main-zone:hover { border-color: #7dd3fc; background: #102d4a; }
+        .drop-zone.main-zone .drop-title { font-size: 17px; font-weight: bold; color: #38bdf8; margin-bottom: 8px; }
+        .drop-zone.main-zone p { font-size: 14px; color: #e0e0e0; margin: 0; }
+        .drop-zone.main-zone .sub-text { font-size: 12px; color: #94a3b8; }
+
+        /* 迎賓・お見送り用エリア */
+        .drop-zone.welcome-zone { border-color: #f59e0b; background: #302419; }
+        .drop-zone.welcome-zone:hover { border-color: #fbbf24; background: #3a2c1e; }
+        .drop-zone.welcome-zone .drop-title { font-size: 15px; font-weight: bold; color: #fbbf24; margin-bottom: 6px; }
+        .drop-zone.welcome-zone p { font-size: 13px; color: #b0b0b0; margin: 0; }
+        .drop-zone.welcome-zone .sub-text { font-size: 11px; color: #aaa; }
+
+        /* Controls */
+        .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; flex-wrap: wrap; background: #252525; padding: 15px; border-radius: 8px; }
+        .controls label { font-size: 13px; color: #aaa; display: block; margin-bottom: 4px; }
+        .input-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+        input[type="text"], input[type="date"], select.time-select { background: #1e1e1e; border: 1px solid #444; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+        input[type="text"] { width: 260px; }
+        select.time-select { width: 130px; font-weight: bold; }
+        
+        button { background: #4a6b82; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 14px; }
+        button:hover { background: #5a7b92; }
+
+        /* 2-Column Layout Container */
+        .layout-wrapper { display: flex; gap: 20px; margin-top: 15px; width: 100%; box-sizing: border-box; align-items: stretch; }
+        .left-panel { flex: 1; background: #252525; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; min-width: 300px; }
+        .right-panel { flex: 2.5; overflow-x: auto; }
+
+        .left-panel h3 { margin-top: 0; font-size: 15px; color: #61b5fb; border-bottom: 2px solid #444; padding-bottom: 8px; }
+        
+        /* 自由メモ欄（通常画面用テキストエリア） */
+        .memo-textarea { 
+            width: 100%; 
+            flex-grow: 1; 
+            min-height: 450px; 
+            background: #1e1e1e; 
+            color: #fff; 
+            border: 1px solid #444; 
+            border-radius: 6px; 
+            padding: 12px; 
+            font-size: 16px; 
+            font-family: 'Klee One', cursive; 
+            font-weight: 600;
+            resize: vertical; 
+            box-sizing: border-box; 
+            line-height: 1.6; 
+            white-space: pre; 
+            overflow-x: auto; 
+        }
+
+        /* 印刷用メモ表示領域 */
+        .print-memo-container { display: none; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; background: #252525; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 2px solid #333; }
+        th { background: #2f3e46; color: #fff; font-weight: 700; font-size: 14px; white-space: nowrap; }
+        
+        td { font-size: 18px; font-family: 'Klee One', cursive; font-weight: 600; white-space: nowrap; }
+        td.song-name-cell { font-size: 20px !important; font-weight: 700 !important; }
+
+        tr.draggable-row { cursor: grab; }
+        tr.draggable-row:active { cursor: grabbing; }
+        tr.dragging { opacity: 0.4; background: #333; }
+        tr.drag-over { border-top: 2px dashed #61b5fb; }
+
+        .text-center { text-align: center; }
+        .drag-handle { cursor: grab; color: #888; font-size: 16px; padding-right: 8px; user-select: none; }
+        .drag-handle:active { cursor: grabbing; }
+
+        /* Select boxes inside table */
+        select.scene-select { background: #1e1e1e; color: #7dd3fc; border: 1px solid #555; padding: 6px 10px; border-radius: 4px; font-size: 16px; font-family: 'Klee One', cursive; font-weight: 700; width: 100%; box-sizing: border-box; }
+        select.cue-select { background: #1e1e1e; color: #7dd3fc; border: 1px solid #555; padding: 6px 10px; border-radius: 4px; font-size: 16px; font-family: 'Klee One', cursive; font-weight: 600; width: 100%; box-sizing: border-box; }
+        
+        .print-scene-text { display: none; }
+        .print-cue-text { display: none; }
+        
+        /* Action buttons in rows */
+        .row-action-btn { background: #3b7a57; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        .row-action-btn:hover { background: #4a966b; }
+        .row-delete-btn { background: #a94442; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; font-family: 'Helvetica Neue', Arial, sans-serif; margin-left: 4px; }
+        .row-delete-btn:hover { background: #c9302c; }
+
+        /* Print Header Area */
+        .print-header { display: none; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 6px; }
+
+        /* Print styles & Landscape orientation (A4横向き1ページに収める調整) */
+        @page {
+            size: landscape;
+            margin: 10mm;
+        }
+
+        @media print {
+            body { background: #ffffff !important; color: #000000 !important; padding: 0 !important; margin: 0 !important; }
+            .container { background: #ffffff !important; box-shadow: none; padding: 0 !important; max-width: 100% !important; width: 100% !important; }
+            .dropzones-wrapper, .controls, button, .subtitle, .action-column { display: none !important; }
+            h1 { display: none !important; }
+            
+            /* ヘッダー全体を左寄せのフレックスボックスに変更 */
+            .print-header { display: flex !important; justify-content: flex-start !important; align-items: baseline !important; gap: 15px !important; color: #000 !important; margin-bottom: 8px !important; }
+            
+            /* 日付と時間を左側に配置し、文字サイズを大きく (16px) */
+            .print-header .print-datetime { margin: 0 !important; font-size: 18px !important; font-weight: bold !important; color: #000 !important; white-space: nowrap !important; }
+            .print-header .print-datetime .num-large { font-size: 26px !important; font-weight: bold !important; }
+
+            /* タイトル部分をその右側に並べて配置 */
+            .print-header h2 { margin: 0 !important; font-size: 18px !important; color: #000 !important; font-weight: bold !important; text-align: left !important; white-space: nowrap !important; }
+            .print-header h2 .couple-name-large { font-size: 26px !important; }
+            .print-header h2 .honorific-small { font-size: 19px !important; font-weight: normal !important; }
+
+            .layout-wrapper { display: flex !important; gap: 12px !important; width: 100% !important; align-items: stretch !important; height: auto !important; box-sizing: border-box !important; page-break-inside: avoid !important; }
+            
+            .left-panel { flex: 1 !important; background: #ffffff !important; border: 1px solid #ccc !important; padding: 8px !important; box-sizing: border-box !important; }
+            .left-panel h3 { color: #000 !important; border-bottom: 2px solid #ccc !important; font-size: 13px !important; margin-top: 0 !important; margin-bottom: 6px !important; padding-bottom: 4px !important; }
+            
+            .memo-textarea { display: none !important; }
+            .print-memo-container { 
+                display: block !important; 
+                width: 100% !important; 
+                max-width: 100% !important; 
+                box-sizing: border-box !important; 
+                font-family: 'Klee One', cursive !important; 
+                font-weight: 700 !important; 
+                color: #000 !important; 
+                overflow: hidden !important; 
+            }
+            
+            .right-panel { flex: 2.5 !important; min-width: 0 !important; height: auto !important; overflow: visible !important; }
+            table { background: #ffffff !important; border: 1px solid #ccc !important; width: 100% !important; }
+            
+            th { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; padding: 6px 8px !important; font-size: 12px !important; font-weight: 700 !important; white-space: nowrap !important; }
+            th.scene-th { width: 80px !important; }
+
+            td { border: 1px solid #ccc !important; color: #000 !important; padding: 5px 8px !important; font-size: 15px !important; font-family: 'Klee One', cursive !important; font-weight: 600 !important; white-space: nowrap !important; }
+            
+            td.scene-td { width: 80px !important; max-width: 80px !important; padding-right: 2px !important; }
+            td.song-name-cell { font-size: 20px !important; font-weight: 700 !important; }
+
+            select.scene-select, select.cue-select { display: none !important; }
+            
+            .print-scene-text { display: inline-block !important; font-family: 'Klee One', cursive !important; font-size: 15px !important; font-weight: 700 !important; white-space: nowrap !important; transform-origin: left center; width: 100% !important; }
+            .print-scene-text.scale-80 { transform: scaleX(0.8); }
+            .print-scene-text.scale-75 { transform: scaleX(0.75); }
+            .print-scene-text.scale-100 { transform: scaleX(1.0); }
+
+            .print-cue-text { display: inline !important; font-family: 'Klee One', cursive !important; font-size: 15px !important; font-weight: 600 !important; white-space: nowrap !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>iTunes プレイリスト印刷ツール</h1>
+        <div class="subtitle">iTunesから書き出したテキストファイルをドラッグ＆ドロップしてシーン選択・印刷</div>
+
+        <div class="dropzones-wrapper">
+            <div id="welcome-drop-zone" class="drop-zone welcome-zone">
+                <div class="drop-title">📝 迎賓・お見送り用プレイリスト</div>
+                <p>ここにファイルをドロップ<br><span class="sub-text">（「迎賓」または「お見送り」のファイル名に対応）</span></p>
+                <input type="file" id="welcome-file-input" accept=".txt,.csv" style="display: none;">
+            </div>
+            <div id="drop-zone" class="drop-zone main-zone">
+                <div class="drop-title">♫ メインBGM用プレイリスト</div>
+                <p>ここにファイルをドロップ<br><span class="sub-text">（またはクリックしてファイルを選択）</span></p>
+                <input type="file" id="file-input" accept=".txt,.csv" style="display: none;">
+            </div>
+        </div>
+
+        <div class="controls" id="controls-section" style="display: none;">
+            <div class="input-group">
+                <div>
+                    <label>開始日</label>
+                    <input type="date" id="input-date">
+                </div>
+                <div>
+                    <label>開始時間</label>
+                    <select id="input-time" class="time-select" onchange="handleTimeChange(this)">
+                        <option value="12:00">12:00</option>
+                        <option value="17:00">17:00</option>
+                        <option value="自由入力...">自由入力...</option>
+                    </select>
+                </div>
+                <div>
+                    <label>新郎 / 新婦名</label>
+                    <input type="text" id="input-couple" value="本林 諒真様・竹下 由希子様">
+                </div>
+            </div>
+            <button onclick="window.print()">🖨️ このリストを印刷する (横向き)</button>
+        </div>
+
+        <div id="main-content"></div>
+    </div>
+
+    <script>
+        const SCENE_OPTIONS = [
+            "迎賓", "入場", "乾杯準備", "乾杯", "ケーキ準備", "ケーキ入刀", "シェアリング", "歓談",
+            "お色直し退場", "中座", "新郎中座", "再入場", "テーブルラウンド", "フォトラウンド", "キャンドル",
+            "メイン演出", "新婦手紙", "花束贈呈", "両家代表謝辞", "おひらき", "退場", "送賓", "自由入力..."
+        ];
+
+        const CUE_OPTIONS = [
+            "頭から", "サビから", "盛り上がりから", "フェードアウト", "自然終了", "曲つなぎ", "自由入力..."
+        ];
+
+        const GROUP_MAP = {
+            "迎賓": "front", "入場": "front", "乾杯準備": "front", "乾杯": "front", "ケーキ準備": "front", "ケーキ入刀": "front", "シェアリング": "front", "歓談": "front",
+            "お色直し退場": "middle_exit", "中座": "middle_exit", "新郎中座": "middle_exit", 
+            "再入場": "middle_reentry", "テーブルラウンド": "middle_other", "フォトラウンド": "middle_other", "キャンドル": "middle_other", "メイン演出": "middle_other",
+            "新婦手紙": "back", "花束贈呈": "back", "両家代表謝辞": "back", "おひらき": "back", "退場": "back", "送賓": "back"
+        };
+
+        let currentRows = [];
+        let draggedIndex = null;
+        let welcomeMemoContent = "";
+        let farewellMemoContent = "";
+        let welcomeLoaded = false;
+        let farewellLoaded = false;
+        let autoInsertTimer = null;
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const welcomeDropZone = document.getElementById('welcome-drop-zone');
+        const welcomeFileInput = document.getElementById('welcome-file-input');
+        const mainContent = document.getElementById('main-content');
+        const controlsSection = document.getElementById('controls-section');
+
+        function generateId() {
+            return 'row_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#7dd3fc'; });
+        dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = '#38bdf8'; });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#38bdf8';
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        welcomeDropZone.addEventListener('click', () => welcomeFileInput.click());
+        welcomeDropZone.addEventListener('dragover', (e) => { e.preventDefault(); welcomeDropZone.style.borderColor = '#fbbf24'; });
+        welcomeDropZone.addEventListener('dragleave', () => { welcomeDropZone.style.borderColor = '#f59e0b'; });
+        welcomeDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            welcomeDropZone.style.borderColor = '#f59e0b';
+            if (e.dataTransfer.files.length) handleSpecialFile(e.dataTransfer.files[0]);
+        });
+        welcomeFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleSpecialFile(e.target.files[0]);
+        });
+
+        document.getElementById('input-date').addEventListener('input', updateHeaderPreview);
+        document.getElementById('input-time').addEventListener('change', updateHeaderPreview);
+        document.getElementById('input-couple').addEventListener('input', updateHeaderPreview);
+
+        function handleTimeChange(selectEl) {
+            if (selectEl.value === "自由入力...") {
+                const custom = prompt("開始時間を入力してください (例: 13:30):", "12:30");
+                if (custom) {
+                    const newOpt = document.createElement("option");
+                    newOpt.value = custom;
+                    newOpt.innerText = custom;
+                    newOpt.selected = true;
+                    selectEl.insertBefore(newOpt, selectEl.lastElementChild);
+                    selectEl.value = custom;
+                } else {
+                    selectEl.value = "12:00";
+                }
+            }
+            updateHeaderPreview();
+        }
+
+        function handleSpecialFile(file) {
+            const fileName = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                if (fileName.includes('お見送り') || fileName.includes('送賓')) {
+                    parseFarewellData(text);
+                } else if (fileName.includes('迎賓')) {
+                    parseWelcomeData(text);
+                } else {
+                    parseWelcomeData(text);
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function parseWelcomeData(text) {
+            const lines = text.split(/\r\n|\n/);
+            if (lines.length < 2) return;
+
+            const header = lines[0].split('\t');
+            const nameIdx = header.findIndex(h => h.includes('名前') || h.includes('曲名'));
+            const artistIdx = header.findIndex(h => h.includes('アーティスト'));
+
+            if (nameIdx === -1) {
+                alert('迎賓用ファイルの列が見つかりません。');
+                return;
+            }
+
+            let textContent = "【迎賓用プレイリスト】\n";
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = lines[i].split('\t');
+                const name = cols[nameIdx] || '';
+                const artist = artistIdx !== -1 ? (cols[artistIdx] || '') : '';
+                if (name) {
+                    textContent += `・${name}${artist ? ` / ${artist}` : ''}\n`;
+                }
+            }
+
+            welcomeMemoContent = textContent;
+            welcomeLoaded = true;
+            updateMemoTextareaContent();
+
+            if (currentRows.length > 0) {
+                syncSpecialRows();
+            }
+        }
+
+        function parseFarewellData(text) {
+            const lines = text.split(/\r\n|\n/);
+            if (lines.length < 2) return;
+
+            const header = lines[0].split('\t');
+            const nameIdx = header.findIndex(h => h.includes('名前') || h.includes('曲名'));
+            const artistIdx = header.findIndex(h => h.includes('アーティスト'));
+
+            if (nameIdx === -1) {
+                alert('お見送り用ファイルの列が見つかりません。');
+                return;
+            }
+
+            let textContent = "\n【お見送り用プレイリスト】\n";
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = lines[i].split('\t');
+                const name = cols[nameIdx] || '';
+                const artist = artistIdx !== -1 ? (cols[artistIdx] || '') : '';
+                if (name) {
+                    textContent += `・${name}${artist ? ` / ${artist}` : ''}\n`;
+                }
+            }
+
+            farewellMemoContent = textContent;
+            farewellLoaded = true;
+            updateMemoTextareaContent();
+
+            if (currentRows.length > 0) {
+                syncSpecialRows();
+            }
+        }
+
+        function updateMemoTextareaContent() {
+            const memoTextarea = document.querySelector('.memo-textarea');
+            const combined = (welcomeMemoContent + "\n" + farewellMemoContent).trim();
+            if (memoTextarea) {
+                memoTextarea.value = combined;
+                updatePrintMemoBox(memoTextarea);
+            }
+        }
+
+        function syncSpecialRows() {
+            if (welcomeLoaded) {
+                if (currentRows.length > 0 && currentRows[0].isBlank) {
+                    currentRows[0].name = "";
+                    currentRows[0].artist = "（迎賓プレイリストあり）";
+                    currentRows[0].scene = "迎賓";
+                } else {
+                    const hasWelcomeRow = currentRows.some(r => r.scene === "迎賓" && r.artist.includes('プレイリストあり'));
+                    if (!hasWelcomeRow) {
+                        currentRows.unshift({
+                            id: generateId(),
+                            name: "",
+                            artist: "（迎賓プレイリストあり）",
+                            scene: "迎賓",
+                            cue: "",
+                            isBlank: false
+                        });
+                    }
+                }
+            }
+            if (farewellLoaded) {
+                const hasFarewellRow = currentRows.some(r => r.scene === "送賓" || r.scene === "退場" || r.artist.includes('お見送り'));
+                if (!hasFarewellRow) {
+                    currentRows.push({
+                        id: generateId(),
+                        name: "",
+                        artist: "（お見送りプレイリストあり）",
+                        scene: "送賓",
+                        cue: "",
+                        isBlank: false
+                    });
+                }
+            }
+            autoInsertGroupBlankRows();
+            renderUI();
+        }
+
+        function handleFile(file) {
+            const fileName = file.name;
+            const match = fileName.match(/(\d{1,2})[_\-](\d{1,2})/);
+            if (match) {
+                const month = match[1].padStart(2, '0');
+                const day = match[2].padStart(2, '0');
+                const year = new Date().getFullYear();
+                document.getElementById('input-date').value = `${year}-${month}-${day}`;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseData(e.target.result);
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function parseData(text) {
+            const lines = text.split(/\r\n|\n/);
+            if (lines.length < 2) {
+                alert('有効なデータが見つかりませんでした。');
+                return;
+            }
+
+            const header = lines[0].split('\t');
+            const nameIdx = header.findIndex(h => h.includes('名前') || h.includes('曲名'));
+            const artistIdx = header.findIndex(h => h.includes('アーティスト'));
+
+            if (nameIdx === -1) {
+                alert('必要な列が見つかりません。iTunesの標準エクスポート形式（.txt）を選択してください。');
+                return;
+            }
+
+            currentRows = [];
+
+            if (welcomeLoaded) {
+                currentRows.push({
+                    id: generateId(),
+                    name: "",
+                    artist: "（迎賓プレイリストあり）",
+                    scene: "迎賓",
+                    cue: "",
+                    isBlank: false
+                });
+            }
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = lines[i].split('\t');
+                const name = cols[nameIdx] || '';
+                const artist = artistIdx !== -1 ? (cols[artistIdx] || '') : '';
+
+                if (name) {
+                    currentRows.push({ id: generateId(), name, artist, scene: "", cue: "", isBlank: false });
+                }
+            }
+
+            if (farewellLoaded) {
+                currentRows.push({
+                    id: generateId(),
+                    name: "",
+                    artist: "（お見送りプレイリストあり）",
+                    scene: "送賓",
+                    cue: "",
+                    isBlank: false
+                });
+            }
+
+            autoInsertGroupBlankRows();
+            renderUI();
+            controlsSection.style.display = 'flex';
+        }
+
+        function autoInsertGroupBlankRows() {
+            let cleanRows = currentRows.filter(r => !r.isBlank);
+            let hasWelcome = cleanRows.some(r => r.scene === "迎賓");
+            let newRows = [];
+
+            for (let i = 0; i < cleanRows.length; i++) {
+                const curr = cleanRows[i];
+                const prev = i > 0 ? cleanRows[i - 1] : null;
+
+                if (!hasWelcome && curr.scene === "入場") {
+                    if (newRows.length === 0 || !newRows[newRows.length - 1].isBlank) {
+                        newRows.push({ id: generateId(), name: "", artist: "", scene: "", cue: "", isBlank: true });
+                    }
+                } else if (prev) {
+                    const prevGroup = GROUP_MAP[prev.scene] || null;
+                    const currGroup = GROUP_MAP[curr.scene] || null;
+
+                    if (prevGroup && currGroup && prevGroup !== currGroup) {
+                        if (newRows.length === 0 || !newRows[newRows.length - 1].isBlank) {
+                            newRows.push({ id: generateId(), name: "", artist: "", scene: "", cue: "", isBlank: true });
+                        }
+                    }
+                }
+                newRows.push(curr);
+            }
+            currentRows = newRows;
+        }
+
+        function insertBlankRow(index) {
+            saveCurrentInputs();
+            currentRows.splice(index + 1, 0, { id: generateId(), name: "", artist: "", scene: "", cue: "", isBlank: true });
+            renderUI();
+        }
+
+        function removeRow(index) {
+            saveCurrentInputs();
+            currentRows.splice(index, 1);
+            renderUI();
+        }
+
+        function saveCurrentInputs() {
+            const memoTextarea = document.querySelector('.memo-textarea');
+            if (memoTextarea) {
+                welcomeMemoContent = memoTextarea.value;
+            }
+
+            const rows = document.querySelectorAll('#playlist-tbody tr');
+            rows.forEach((tr) => {
+                const rowId = tr.getAttribute('data-id');
+                if (rowId) {
+                    const rowData = currentRows.find(r => r.id === rowId);
+                    if (rowData && !rowData.isBlank) {
+                        const sceneSelect = tr.querySelector('.scene-select');
+                        const cueSelect = tr.querySelector('.cue-select');
+                        if (sceneSelect) rowData.scene = sceneSelect.value;
+                        if (cueSelect) rowData.cue = cueSelect.value;
+                    }
+                }
+            });
+        }
+
+        function getHeaderText() {
+            const dateVal = document.getElementById('input-date').value;
+            const timeVal = document.getElementById('input-time').value;
+            const coupleVal = document.getElementById('input-couple').value;
+            
+            const formattedCouple = coupleVal.replace(/様/g, '<span class="honorific-small">様</span>');
+            const coupleText = `<span class="couple-name-large">${formattedCouple}</span> 披露宴BGMプレイリスト`;
+            
+            let formattedDate = dateVal;
+            if (dateVal) {
+                const parts = dateVal.split('-');
+                if (parts.length === 3) {
+                    formattedDate = `<span class="num-large">${parseInt(parts[1])}</span>月<span class="num-large">${parseInt(parts[2])}</span>日`;
+                }
+            }
+
+            let formattedTime = timeVal;
+            if (timeVal) {
+                const timeParts = timeVal.split(':');
+                if (timeParts.length === 2) {
+                    formattedTime = `<span class="num-large">${timeParts[0]}</span>:<span class="num-large">${timeParts[1]}</span>`;
+                }
+            }
+
+            const dateTimeText = (formattedDate || formattedTime) ? `${formattedDate} ${formattedTime}` : '';
+            
+            return { coupleText, dateTimeText };
+        }
+
+        function updateHeaderPreview() {
+            const h2El = document.getElementById('display-title');
+            const pEl = document.getElementById('display-datetime');
+            if (h2El && pEl) {
+                const info = getHeaderText();
+                h2El.innerHTML = info.coupleText;
+                pEl.innerHTML = info.dateTimeText;
+            }
+        }
+
+        function updatePrintMemoBox(textarea) {
+            const printBox = document.querySelector('.print-memo-container');
+            if (!printBox) return;
+
+            const lines = textarea.value.split('\n');
+            const containerWidth = 270;
+
+            let baseFontSize = 13;
+            let minFontSize = 7;
+
+            let htmlContent = '';
+            
+            const measureSpan = document.createElement('span');
+            measureSpan.style.visibility = 'hidden';
+            measureSpan.style.position = 'absolute';
+            measureSpan.style.whiteSpace = 'pre';
+            measureSpan.style.fontFamily = "'Klee One', cursive";
+            document.body.appendChild(measureSpan);
+
+            for (let line of lines) {
+                if (!line) {
+                    htmlContent += '<div style="height: 12px;"></div>';
+                    continue;
+                }
+
+                measureSpan.innerText = line;
+                let currentSize = baseFontSize;
+                measureSpan.style.fontSize = currentSize + 'px';
+
+                while (measureSpan.offsetWidth > containerWidth && currentSize > minFontSize) {
+                    currentSize -= 0.5;
+                    measureSpan.style.fontSize = currentSize + 'px';
+                }
+
+                htmlContent += `<div style="font-size: ${currentSize}px; white-space: pre; line-height: 1.4; overflow: hidden; text-overflow: clip;">${escapeHtml(line)}</div>`;
+            }
+
+            document.body.removeChild(measureSpan);
+            printBox.innerHTML = htmlContent;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // シーンの文字数に応じたスケールクラスを決定するヘルパー
+        function getSceneScaleClass(text) {
+            if (!text) return 'scale-100';
+            if (text.length >= 8) return 'scale-75';
+            if (text.length >= 6) return 'scale-80';
+            return 'scale-100';
+        }
+
+        function renderUI() {
+            saveCurrentInputs();
+            const info = getHeaderText();
+            let optionsHtml = SCENE_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+            let cueOptionsHtml = CUE_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+
+            let html = `
+                <div class="print-header">
+                    <div id="display-datetime" class="print-datetime">${info.dateTimeText}</div>
+                    <h2 id="display-title">${info.coupleText}</h2>
+                </div>
+                
+                <div class="layout-wrapper">
+                    <!-- 左側: その他プレイリスト・自由記述メモ欄 -->
+                    <div class="left-panel">
+                        <h3>その他プレイリスト・自由メモ欄</h3>
+                        <textarea class="memo-textarea" placeholder="ここに迎賓曲やメモを自由に記入できます...">${welcomeMemoContent || (welcomeMemoContent + "\n" + farewellMemoContent).trim()}</textarea>
+                        <div class="print-memo-container"></div>
+                    </div>
+
+                    <!-- 右側: メインBGMリスト -->
+                    <div class="right-panel">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 30px;" class="action-column"></th>
+                                    <th class="scene-th" style="width: 160px;">シーン</th>
+                                    <th>曲名</th>
+                                    <th>アーティスト</th>
+                                    <th style="width: 160px;">再生指示</th>
+                                    <th style="width: 110px; text-align: center;" class="action-column">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="playlist-tbody">
+            `;
+
+            currentRows.forEach((r, idx) => {
+                if (r.isBlank) {
+                    html += `
+                        <tr class="draggable-row" draggable="true" data-id="${r.id}" data-index="${idx}" style="height: 35px;">
+                            <td class="text-center action-column"><span class="drag-handle">☰</span></td>
+                            <td class="scene-td"></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td style="text-align: center;" class="action-column">
+                                <button class="row-delete-btn" onclick="removeRow(${idx})">削除</button>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    const sceneText = r.scene || '';
+                    const scaleClass = getSceneScaleClass(sceneText);
+
+                    html += `
+                        <tr class="draggable-row" draggable="true" data-id="${r.id}" data-index="${idx}">
+                            <td class="text-center action-column"><span class="drag-handle">☰</span></td>
+                            <td class="scene-td">
+                                <select class="scene-select" onchange="handleSceneChange(this, ${idx})">
+                                    <option value="">(選択)</option>
+                                    ${optionsHtml}
+                                </select>
+                                <span class="print-scene-text ${scaleClass}">${sceneText}</span>
+                            </td>
+                            <td class="song-name-cell">${r.name}</td>
+                            <td>${r.artist}</td>
+                            <td>
+                                <select class="cue-select" onchange="updateCustomText(this, 'cue', ${idx})">
+                                    <option value="">(指定なし)</option>
+                                    ${cueOptionsHtml}
+                                </select>
+                                <span class="print-cue-text">${r.cue || ''}</span>
+                            </td>
+                            <td style="text-align: center; white-space: nowrap;" class="action-column">
+                                <button class="row-action-btn" onclick="insertBlankRow(${idx})">➕空白</button>
+                                <button class="row-delete-btn" onclick="removeRow(${idx})">削除</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            mainContent.innerHTML = html;
+
+            const memoTextarea = document.querySelector('.memo-textarea');
+            if (memoTextarea) {
+                memoTextarea.addEventListener('input', function() {
+                    updatePrintMemoBox(this);
+                });
+                setTimeout(() => updatePrintMemoBox(memoTextarea), 50);
+            }
+
+            currentRows.forEach((r, idx) => {
+                if (!r.isBlank) {
+                    const tr = document.querySelector(`tr[data-id="${r.id}"]`);
+                    if (tr) {
+                        const sceneSelect = tr.querySelector('.scene-select');
+                        const cueSelect = tr.querySelector('.cue-select');
+                        if (sceneSelect && r.scene) {
+                            if (!Array.from(sceneSelect.options).some(o => o.value === r.scene)) {
+                                const customOpt = document.createElement("option");
+                                customOpt.value = r.scene;
+                                customOpt.innerText = r.scene;
+                                customOpt.selected = true;
+                                sceneSelect.insertBefore(customOpt, sceneSelect.lastElementChild);
+                            }
+                            sceneSelect.value = r.scene;
+                            const spanEl = sceneSelect.nextElementSibling;
+                            spanEl.innerText = r.scene;
+                            spanEl.className = `print-scene-text ${getSceneScaleClass(r.scene)}`;
+                        }
+                        if (cueSelect && r.cue) {
+                            if (!Array.from(cueSelect.options).some(o => o.value === r.cue)) {
+                                const customOpt = document.createElement("option");
+                                customOpt.value = r.cue;
+                                customOpt.innerText = r.cue;
+                                customOpt.selected = true;
+                                cueSelect.insertBefore(customOpt, cueSelect.lastElementChild);
+                            }
+                            cueSelect.value = r.cue;
+                            cueSelect.nextElementSibling.innerText = r.cue;
+                        }
+                    }
+                }
+            });
+
+            initDragAndDrop();
+        }
+
+        function handleSceneChange(selectEl, idx) {
+            updateCustomText(selectEl, 'scene', idx);
+
+            if (autoInsertTimer) clearTimeout(autoInsertTimer);
+
+            autoInsertTimer = setTimeout(() => {
+                saveCurrentInputs();
+                autoInsertGroupBlankRows();
+                renderUI();
+            }, 200);
+        }
+
+        function updateCustomText(selectEl, type, idx) {
+            const spanEl = selectEl.nextElementSibling;
+            const promptMsg = type === 'scene' ? "シーン名を入力してください:" : "再生指示を入力してください:";
+            
+            if (selectEl.value === "自由入力...") {
+                const custom = prompt(promptMsg, "");
+                if (custom) {
+                    const newOpt = document.createElement("option");
+                    newOpt.value = custom;
+                    newOpt.innerText = custom;
+                    newOpt.selected = true;
+                    selectEl.insertBefore(newOpt, selectEl.lastElementChild);
+                    spanEl.innerText = custom;
+                    if (type === 'scene') {
+                        currentRows[idx].scene = custom;
+                        spanEl.className = `print-scene-text ${getSceneScaleClass(custom)}`;
+                    }
+                    if (type === 'cue') currentRows[idx].cue = custom;
+                } else {
+                    selectEl.value = "";
+                    spanEl.innerText = "";
+                    if (type === 'scene') {
+                        currentRows[idx].scene = "";
+                        spanEl.className = "print-scene-text scale-100";
+                    }
+                    if (type === 'cue') currentRows[idx].cue = "";
+                }
+            } else {
+                spanEl.innerText = selectEl.value;
+                if (type === 'scene') {
+                    currentRows[idx].scene = selectEl.value;
+                    spanEl.className = `print-scene-text ${getSceneScaleClass(selectEl.value)}`;
+                }
+                if (type === 'cue') currentRows[idx].cue = selectEl.value;
+            }
+        }
+
+        function initDragAndDrop() {
+            const tbody = document.getElementById('playlist-tbody');
+            if (!tbody) return;
+            const rows = tbody.querySelectorAll('tr.draggable-row');
+
+            rows.forEach(row => {
+                row.addEventListener('dragstart', (e) => {
+                    draggedIndex = parseInt(row.getAttribute('data-index'));
+                    setTimeout(() => row.classList.add('dragging'), 0);
+                });
+
+                row.addEventListener('dragend', () => {
+                    row.classList.remove('dragging');
+                    rows.forEach(r => r.classList.remove('drag-over'));
+                });
+
+                row.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const targetRow = e.target.closest('tr');
+                    if (targetRow && targetRow !== row) {
+                        rows.forEach(r => r.classList.remove('drag-over'));
+                        targetRow.classList.add('drag-over');
+                    }
+                });
+
+                row.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    saveCurrentInputs();
+                    const targetRow = e.target.closest('tr');
+                    if (targetRow) {
+                        const targetIndex = parseInt(targetRow.getAttribute('data-index'));
+                        if (draggedIndex !== null && draggedIndex !== targetIndex) {
+                            const movedItem = currentRows.splice(draggedIndex, 1)[0];
+                            currentRows.splice(targetIndex, 0, movedItem);
+                            renderUI();
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
