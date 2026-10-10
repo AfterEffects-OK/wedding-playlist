@@ -115,7 +115,7 @@
             h1 { display: none !important; }
             
             /* ヘッダー全体を左寄せのフレックスボックスに変更 */
-            .print-header { display: flex !important; justify-content: flex-start !important; align-items: baseline !important; gap: 15px !important; color: #000 !important; margin-bottom: 8px !important; }
+            .print-header { display: flex !important; justify-content: flex-start !important; align-items: baseline !important; gap: 15px !important; color: #000 !important; margin-bottom: 0px !important; padding-bottom: 0px !important; }
             
             /* 日付と時間を左側に配置し、文字サイズを大きく (16px) */
             .print-header .print-datetime { margin: 0 !important; font-size: 18px !important; font-weight: bold !important; color: #000 !important; white-space: nowrap !important; }
@@ -125,8 +125,9 @@
             .print-header h2 { margin: 0 !important; font-size: 18px !important; color: #000 !important; font-weight: bold !important; text-align: left !important; white-space: nowrap !important; }
             .print-header h2 .couple-name-large { font-size: 26px !important; }
             .print-header h2 .honorific-small { font-size: 19px !important; font-weight: normal !important; }
+            .print-header h2 .title-suffix { font-weight: 500 !important; }
 
-            .layout-wrapper { display: flex !important; gap: 12px !important; width: 100% !important; align-items: stretch !important; height: auto !important; box-sizing: border-box !important; page-break-inside: avoid !important; }
+            .layout-wrapper { display: flex !important; gap: 12px !important; width: 100% !important; align-items: stretch !important; height: auto !important; box-sizing: border-box !important; page-break-inside: avoid !important; margin-top: 0 !important; }
             
             .left-panel { flex: 1 !important; background: #ffffff !important; border: 1px solid #ccc !important; padding: 8px !important; box-sizing: border-box !important; }
             .left-panel h3 { color: #000 !important; border-bottom: 2px solid #ccc !important; font-size: 13px !important; margin-top: 0 !important; margin-bottom: 6px !important; padding-bottom: 4px !important; }
@@ -144,15 +145,15 @@
             }
             
             .right-panel { flex: 2.5 !important; min-width: 0 !important; height: auto !important; overflow: visible !important; }
-            table { background: #ffffff !important; border: 1px solid #ccc !important; width: 100% !important; }
+            table { background: #ffffff !important; border: 2px solid #ddd !important; width: 100% !important; }
             
-            th { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; padding: 6px 8px !important; font-size: 12px !important; font-weight: 700 !important; white-space: nowrap !important; }
+            th { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; padding: 0px 25px !important; font-size: 11px !important; font-weight: 700 !important; white-space: nowrap !important; }
             th.scene-th { width: 80px !important; }
 
-            td { border: 1px solid #ccc !important; color: #000 !important; padding: 5px 8px !important; font-size: 15px !important; font-family: 'Klee One', cursive !important; font-weight: 600 !important; white-space: nowrap !important; }
+            td { border: 2px solid #ddd !important; color: #000 !important; padding: 2px 5px !important; font-size: 15px !important; font-family: 'Klee One', cursive !important; font-weight: 600 !important; white-space: nowrap !important; }
             
-            td.scene-td { width: 80px !important; max-width: 80px !important; padding-right: 2px !important; }
-            td.song-name-cell { font-size: 20px !important; font-weight: 700 !important; }
+            td.scene-td { width: 80px !important; max-width: 40px !important; padding-right: 0px !important; }
+            td.song-name-cell { font-size: 22px !important; font-weight: 900 !important; }
 
             select.scene-select, select.cue-select { display: none !important; }
             
@@ -558,7 +559,7 @@
             const coupleVal = document.getElementById('input-couple').value;
             
             const formattedCouple = coupleVal.replace(/様/g, '<span class="honorific-small">様</span>');
-            const coupleText = `<span class="couple-name-large">${formattedCouple}</span> 披露宴BGMプレイリスト`;
+            const coupleText = `<span class="couple-name-large">${formattedCouple}</span> <span class="title-suffix">披露宴BGMプレイリスト</span>`;
             
             let formattedDate = dateVal;
             if (dateVal) {
