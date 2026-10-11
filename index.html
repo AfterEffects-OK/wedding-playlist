@@ -363,10 +363,10 @@
 
         .print-header { display: none; }
 
-        /* 印刷用スタイル（1ページに確実に収めるため余白とパディングを調整） */
+        /* 印刷用スタイル（1ページに完全に収めるための最適化） */
         @page {
             size: landscape;
-            margin: 4mm;
+            margin: 3mm;
         }
 
         @media print {
@@ -376,6 +376,8 @@
                 padding: 0 !important;
                 margin: 0 !important;
                 font-family: 'Helvetica Neue', Arial, sans-serif;
+                height: 100vh !important;
+                overflow: hidden !important;
             }
 
             .container {
@@ -397,36 +399,36 @@
                 align-items: baseline !important;
                 gap: 20px !important;
                 color: #000 !important;
-                margin-bottom: 4px !important;
+                margin-bottom: 2px !important;
                 padding-bottom: 2px !important;
                 border-bottom: 2px solid #000 !important;
             }
 
             .print-header .print-datetime {
                 margin: 0 !important;
-                font-size: 15px !important;
+                font-size: 14px !important;
                 font-weight: bold !important;
                 color: #000 !important;
                 white-space: nowrap !important;
             }
             .print-header .print-datetime .num-large {
-                font-size: 22px !important;
+                font-size: 20px !important;
                 font-weight: bold !important;
             }
 
             .print-header h2 {
                 margin: 0 !important;
-                font-size: 16px !important;
+                font-size: 15px !important;
                 color: #000 !important;
                 font-weight: normal !important;
                 white-space: nowrap !important;
             }
-            .print-header h2 .couple-name-large { font-size: 21px !important; font-weight: bold !important; }
-            .print-header h2 .honorific-small { font-size: 15px !important; font-weight: normal !important; }
+            .print-header h2 .couple-name-large { font-size: 20px !important; font-weight: bold !important; }
+            .print-header h2 .honorific-small { font-size: 14px !important; font-weight: normal !important; }
 
             .layout-wrapper {
                 display: flex !important;
-                gap: 10px !important;
+                gap: 8px !important;
                 width: 100% !important;
                 align-items: stretch !important;
                 margin-top: 0 !important;
@@ -436,15 +438,15 @@
                 flex: 1 !important;
                 background: #ffffff !important;
                 border: 1px solid #ddd !important;
-                padding: 6px !important;
+                padding: 4px !important;
                 border-radius: 0 !important;
             }
 
             .left-panel h3 {
                 color: #000 !important;
                 border-bottom: 1px solid #ddd !important;
-                font-size: 11px !important;
-                margin-bottom: 4px !important;
+                font-size: 10px !important;
+                margin-bottom: 2px !important;
                 padding-bottom: 2px !important;
                 font-weight: bold !important;
             }
@@ -482,36 +484,36 @@
             th {
                 background: #f8fafc !important;
                 color: #000 !important;
-                padding: 1px 4px !important;
+                padding: 1px 3px !important;
                 font-size: 10px !important;
                 font-weight: 700 !important;
             }
 
             th.scene-th, td.scene-td {
-                width: 90px !important;
+                width: 85px !important;
                 box-sizing: border-box !important;
             }
 
             td {
                 color: #000 !important;
-                padding: 2px 4px !important;
-                font-size: 13px !important;
+                padding: 2px 3px !important;
+                font-size: 12px !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
                 font-weight: 600 !important;
                 overflow: hidden !important;
             }
 
-            /* 印刷時：曲名（18px）の下に再生指示（11px・赤色の太字）を表示 */
+            /* 印刷時：曲名（17px）の下に再生指示（10px・赤色の太字）を表示 */
             td.song-name-cell {
-                font-size: 18px !important;
+                font-size: 17px !important;
                 font-weight: 900 !important;
                 color: #000 !important;
-                line-height: 1.2 !important;
+                line-height: 1.15 !important;
             }
 
             .print-cue-subtext {
                 display: block !important;
-                font-size: 11px !important;
+                font-size: 10px !important;
                 font-weight: bold !important;
                 color: #ef4444 !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
@@ -523,7 +525,7 @@
             .print-scene-text {
                 display: inline-block !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
-                font-size: 13px !important;
+                font-size: 12px !important;
                 font-weight: 700 !important;
                 white-space: nowrap !important;
                 transform-origin: left center !important;
