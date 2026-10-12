@@ -168,7 +168,7 @@
             color: var(--text-sub);
         }
 
-        input[type="text"], input[type="date"], select.time-select {
+        input[type="text"], input[type="date"], input[type="number"], select.time-select {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             color: #fff;
@@ -178,11 +178,12 @@
             outline: none;
             transition: border-color 0.2s;
         }
-        input[type="text"]:focus, input[type="date"]:focus, select.time-select:focus {
+        input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, select.time-select:focus {
             border-color: var(--primary);
         }
 
         input[type="text"] { width: 320px; }
+        input[type="number"].media-count-input { width: 85px; text-align: center; font-weight: 600; }
         select.time-select { width: 130px; font-weight: 600; }
 
         .btn-print {
@@ -425,7 +426,7 @@
             border: 1px solid var(--card-border);
             padding: 24px;
             border-radius: 14px;
-            width: 480px;
+            width: 520px;
             max-width: 90vw;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
             transform: scale(0.95);
@@ -493,32 +494,76 @@
             color: #0f172a;
             border-color: var(--primary);
         }
-        .cue-chip-btn.selected {
-            background: var(--primary);
-            color: #0f172a;
-            border-color: var(--primary);
-            box-shadow: 0 2px 6px rgba(56, 189, 248, 0.3);
-        }
         .cue-chip-btn.time-chip {
             background: #0369a1;
             border-color: #38bdf8;
             color: #f0f9ff;
         }
 
-        /* 選択順序を表示するプレビューエリア */
-        .selected-sequence-box {
+        /* 順序入れ替え可能なリストエリア */
+        .sequence-list-box {
             background: #0f172a;
-            border: 1px dashed var(--primary);
-            padding: 8px 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 8px;
+            min-height: 48px;
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sequence-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 6px 10px;
             border-radius: 6px;
             font-size: 13px;
             color: var(--primary);
             font-weight: 600;
-            margin-top: 8px;
-            min-height: 38px;
+        }
+        .seq-btn-group {
             display: flex;
-            align-items: center;
+            gap: 4px;
+        }
+        .seq-move-btn {
+            background: #334155;
+            color: #fff;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .seq-move-btn:hover {
+            background: var(--primary);
+            color: #0f172a;
+        }
+        .seq-del-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .seq-del-btn:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .seq-header-bar {
+            display: flex;
             justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
         }
         .clear-seq-btn {
             background: transparent;
@@ -529,7 +574,7 @@
             font-weight: bold;
         }
 
-        /* 時間指定ビルダー用ポップアップ/インラインエリア */
+        /* 時間指定ビルダー用エリア */
         .time-builder-box {
             background: #0f172a;
             border: 1px solid var(--primary);
@@ -675,9 +720,23 @@
                 color: #000 !important;
                 font-weight: normal !important;
                 white-space: nowrap !important;
+                display: flex !important;
+                align-items: baseline !important;
             }
             .print-header h2 .couple-name-large { font-size: 20px !important; font-weight: bold !important; }
             .print-header h2 .honorific-small { font-size: 14px !important; font-weight: normal !important; }
+
+            .print-header .return-cd-print {
+                margin-left: 40px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: #000 !important;
+                white-space: nowrap !important;
+            }
+            .print-header .return-cd-print .cd-num-large {
+                font-size: 18px !important;
+                font-weight: bold !important;
+            }
 
             .layout-wrapper {
                 display: flex !important;
@@ -849,6 +908,14 @@
                     <label>新郎・新婦名 / 宴名</label>
                     <input type="text" id="input-couple" value="本林諒真・竹下由希子">
                 </div>
+                <div class="field-item">
+                    <label>返却CD枚数</label>
+                    <input type="number" id="input-cd-count" class="media-count-input" min="0" value="0" placeholder="0">
+                </div>
+                <div class="field-item">
+                    <label>返却DVD枚数</label>
+                    <input type="number" id="input-dvd-count" class="media-count-input" min="0" value="0" placeholder="0">
+                </div>
             </div>
             <button class="btn-print" onclick="window.print()">
                 <span>🖨️ A4横向きで印刷する</span>
@@ -861,10 +928,10 @@
     <!-- カスタム指示モーダル -->
     <div id="time-modal" class="modal-overlay">
         <div class="modal-box">
-            <h3>🎛️ 再生指示の組み合わせと順番設定</h3>
+            <h3>🎛️ 再生指示の組み合わせ・順番設定</h3>
 
             <div class="modal-field">
-                <label>基本指示（クリックした順に組み合わせに追加されます）</label>
+                <label>基本指示（クリックするとリストに追加されます）</label>
                 <div class="cue-chip-container" id="cue-chips-container">
                     <button type="button" class="cue-chip-btn" onclick="addStandardCue('頭から')">頭から</button>
                     <button type="button" class="cue-chip-btn" onclick="addStandardCue('サビから')">サビから</button>
@@ -900,10 +967,13 @@
                     </div>
                 </div>
 
-                <label style="font-size: 11px; color: var(--text-sub); margin-top: 8px;">現在の組み合わせ順序プレビュー：</label>
-                <div class="selected-sequence-box">
-                    <span id="sequence-preview-text">（選択なし）</span>
+                <div class="seq-header-bar">
+                    <label style="font-size: 11px; color: var(--text-sub); margin: 0;">設定中の指示リスト（↑↓ボタンで順序変更可能）：</label>
                     <button type="button" class="clear-seq-btn" onclick="clearSequence()">全クリア</button>
+                </div>
+                
+                <div class="sequence-list-box" id="sequence-list-box">
+                    <!-- JSで動的生成 -->
                 </div>
             </div>
 
@@ -1025,6 +1095,8 @@
         document.getElementById('input-date').addEventListener('input', updateHeaderPreview);
         document.getElementById('input-time').addEventListener('change', updateHeaderPreview);
         document.getElementById('input-couple').addEventListener('input', updateHeaderPreview);
+        document.getElementById('input-cd-count').addEventListener('input', updateHeaderPreview);
+        document.getElementById('input-dvd-count').addEventListener('input', updateHeaderPreview);
 
         function handleTimeChange(selectEl) {
             if (selectEl.value === "自由入力...") {
@@ -1376,6 +1448,8 @@
             const dateVal = document.getElementById('input-date').value;
             const timeVal = document.getElementById('input-time').value;
             const coupleVal = document.getElementById('input-couple').value;
+            const cdCountVal = parseInt(document.getElementById('input-cd-count').value, 10) || 0;
+            const dvdCountVal = parseInt(document.getElementById('input-dvd-count').value, 10) || 0;
             
             let processedCouple = coupleVal.trim();
             if (processedCouple) {
@@ -1386,7 +1460,13 @@
                 }
             }
 
-            const coupleText = `<span class="couple-name-large">${processedCouple}</span> 披露宴BGMプレイリスト`;
+            let returnMediaStr = `返却：CD<span class="media-num-large">${cdCountVal}</span>枚`;
+            if (dvdCountVal > 0) {
+                returnMediaStr += `+DVD<span class="media-num-large">${dvdCountVal}</span>枚`;
+            }
+
+            const returnCdText = `<span class="return-cd-print">${returnMediaStr}</span>`;
+            const coupleText = `<span class="couple-name-large">${processedCouple}</span> 披露宴BGMプレイリスト ${returnCdText}`;
             
             let formattedDate = dateVal;
             if (dateVal) {
@@ -1690,13 +1770,13 @@
 
             document.getElementById('modal-free-input').value = "";
             document.getElementById('time-builder-box').classList.remove('active');
-            updateSequencePreview();
+            renderSequenceList();
             document.getElementById('time-modal').classList.add('active');
         }
 
         function addStandardCue(cueName) {
             selectedCueSequence.push(cueName);
-            updateSequencePreview();
+            renderSequenceList();
         }
 
         function toggleTimeBuilder() {
@@ -1720,22 +1800,51 @@
             const timeCue = keywordVal ? `${timeStr}～${keywordVal}` : `${timeStr}～`;
 
             selectedCueSequence.push(timeCue);
-            updateSequencePreview();
+            renderSequenceList();
             document.getElementById('time-builder-box').classList.remove('active');
+        }
+
+        function moveSequenceItem(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= selectedCueSequence.length) return;
+            const item = selectedCueSequence.splice(index, 1)[0];
+            selectedCueSequence.splice(targetIndex, 0, item);
+            renderSequenceList();
+        }
+
+        function removeSequenceItem(index) {
+            selectedCueSequence.splice(index, 1);
+            renderSequenceList();
         }
 
         function clearSequence() {
             selectedCueSequence = [];
-            updateSequencePreview();
+            renderSequenceList();
         }
 
-        function updateSequencePreview() {
-            const previewEl = document.getElementById('sequence-preview-text');
-            if (selectedCueSequence.length > 0) {
-                previewEl.innerText = selectedCueSequence.join(' ➔ ');
-            } else {
-                previewEl.innerText = '（選択なし）';
+        function renderSequenceList() {
+            const box = document.getElementById('sequence-list-box');
+            if (!box) return;
+
+            if (selectedCueSequence.length === 0) {
+                box.innerHTML = '<div style="color: var(--text-sub); font-size: 12px; text-align: center; padding: 10px;">（指示が選択されていません）</div>';
+                return;
             }
+
+            let html = '';
+            selectedCueSequence.forEach((item, idx) => {
+                html += `
+                    <div class="sequence-item">
+                        <span>${idx + 1}. ${escapeHtml(item)}</span>
+                        <div class="seq-btn-group">
+                            ${idx > 0 ? `<button type="button" class="seq-move-btn" onclick="moveSequenceItem(${idx}, -1)">▲</button>` : ''}
+                            ${idx < selectedCueSequence.length - 1 ? `<button type="button" class="seq-move-btn" onclick="moveSequenceItem(${idx}, 1)">▼</button>` : ''}
+                            <button type="button" class="seq-del-btn" onclick="removeSequenceItem(${idx})">✕</button>
+                        </div>
+                    </div>
+                `;
+            });
+            box.innerHTML = html;
         }
 
         function closeTimeModal(isConfirmed) {
