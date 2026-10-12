@@ -733,7 +733,7 @@
                 color: #000 !important;
                 white-space: nowrap !important;
             }
-            .print-header .return-cd-print .cd-num-large {
+            .print-header .return-cd-print .media-num-large {
                 font-size: 18px !important;
                 font-weight: bold !important;
             }
@@ -875,11 +875,11 @@
 
         <div class="dropzones-wrapper">
             <div id="welcome-drop-zone" class="drop-zone welcome-zone">
-                <div class="drop-title">📝 迎賓・お見送り用ファイル</div>
-                <p>ファイルをドロップまたは選択</p>
-                <span class="sub-text">（「迎賓」または「お見送り」のファイル名に対応）</span>
+                <div class="drop-title">📝 迎賓・食事・お見送り用ファイル</div>
+                <p>ファイルをドロップまたは選択（複数同時選択可）</p>
+                <span class="sub-text">（「迎賓」「食事BGM」「歓談曲」「お見送り」等のファイル名に対応）</span>
                 <div id="welcome-status" class="file-status">未読み込み</div>
-                <input type="file" id="welcome-file-input" accept=".txt,.csv" style="display: none;">
+                <input type="file" id="welcome-file-input" accept=".txt,.csv" multiple style="display: none;">
             </div>
             <div id="drop-zone" class="drop-zone main-zone">
                 <div class="drop-title">♫ メインBGM用ファイル</div>
@@ -1011,8 +1011,11 @@
         let draggedIndex = null;
         let welcomeMemoContent = "";
         let farewellMemoContent = "";
+        let foodMemoContent = "";
         let welcomeLoaded = false;
         let farewellLoaded = false;
+        let foodLoaded = false;
+        let loadedSpecialFileNames = [];
         let autoInsertTimer = null;
         let memoDebounceTimer = null;
 
@@ -1058,7 +1061,7 @@
                 const cleaned = nameBase
                     .replace(/^\d{4}[./-]?\d{1,2}[./-]?\d{1,2}[_\s-]*/, '')
                     .replace(/^\d{1,2}[月./\-_]+\d{1,2}[_\s-]*/, '')
-                    .replace(/メインBGM|迎賓|お見送り|送賓|プレイリスト/g, '')
+                    .replace(/メインBGM|迎賓|お見送り|送賓|食事BGM|歓談曲|プレイリスト/g, '')
                     .trim();
 
                 if (cleaned) {
@@ -1086,10 +1089,14 @@
         welcomeDropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             welcomeDropZone.style.borderColor = '#d97706';
-            if (e.dataTransfer.files.length) handleSpecialFile(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files.length) {
+                handleSpecialFiles(e.dataTransfer.files);
+            }
         });
         welcomeFileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) handleSpecialFile(e.target.files[0]);
+            if (e.target.files.length) {
+                handleSpecialFiles(e.target.files);
+            }
         });
 
         document.getElementById('input-date').addEventListener('input', updateHeaderPreview);
@@ -1115,21 +1122,32 @@
             updateHeaderPreview();
         }
 
-        function handleSpecialFile(file) {
-            const fileName = file.name;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                if (fileName.includes('お見送り') || fileName.includes('送賓')) {
-                    parseFarewellData(text);
-                } else {
-                    parseWelcomeData(text);
-                }
-                const statusEl = document.getElementById('welcome-status');
-                statusEl.innerText = '読み込み完了: ' + fileName;
-                statusEl.classList.add('loaded');
-            };
-            reader.readAsText(file, 'UTF-8');
+        function handleSpecialFiles(files) {
+            let processedCount = 0;
+            Array.from(files).forEach(file => {
+                const fileName = file.name;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    if (fileName.includes('お見送り') || fileName.includes('送賓')) {
+                        parseFarewellData(text);
+                    } else if (fileName.includes('食事BGM') || fileName.includes('歓談曲')) {
+                        parseFoodData(text);
+                    } else {
+                        parseWelcomeData(text);
+                    }
+
+                    if (!loadedSpecialFileNames.includes(fileName)) {
+                        loadedSpecialFileNames.push(fileName);
+                    }
+
+                    processedCount++;
+                    const statusEl = document.getElementById('welcome-status');
+                    statusEl.innerText = '読み込み完了: ' + loadedSpecialFileNames.join(', ');
+                    statusEl.classList.add('loaded');
+                };
+                reader.readAsText(file, 'UTF-8');
+            });
         }
 
         function parseWelcomeData(text) {
@@ -1163,6 +1181,35 @@
             if (currentRows.length > 0) syncSpecialRows();
         }
 
+        function parseFoodData(text) {
+            const lines = text.split(/\r\n|\n/);
+            if (lines.length < 2) return;
+
+            const header = lines[0].split('\t');
+            const nameIdx = header.findIndex(h => h.includes('名前') || h.includes('曲名'));
+            const artistIdx = header.findIndex(h => h.includes('アーティスト'));
+
+            if (nameIdx === -1) {
+                alert('食事BGM用ファイルのフォーマットが不整合です。');
+                return;
+            }
+
+            let textContent = "【食事BGM用プレイリスト】\n";
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = lines[i].split('\t');
+                const name = cols[nameIdx] || '';
+                const artist = artistIdx !== -1 ? (cols[artistIdx] || '') : '';
+                if (name) {
+                    textContent += `・${name}${artist ? ` / ${artist}` : ''}\n`;
+                }
+            }
+
+            foodMemoContent = textContent;
+            foodLoaded = true;
+            updateMemoTextareaContent();
+        }
+
         function parseFarewellData(text) {
             const lines = text.split(/\r\n|\n/);
             if (lines.length < 2) return;
@@ -1176,7 +1223,7 @@
                 return;
             }
 
-            let textContent = "\n【お見送り用プレイリスト】\n";
+            let textContent = "【お見送り用プレイリスト】\n";
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
                 const cols = lines[i].split('\t');
@@ -1196,7 +1243,7 @@
 
         function updateMemoTextareaContent() {
             const memoTextarea = document.querySelector('.memo-textarea');
-            const combined = (welcomeMemoContent + "\n" + farewellMemoContent).trim();
+            const combined = [welcomeMemoContent, foodMemoContent, farewellMemoContent].filter(Boolean).join("\n\n").trim();
             if (memoTextarea) {
                 memoTextarea.value = combined;
                 updatePrintMemoBox(memoTextarea);
@@ -1204,31 +1251,27 @@
         }
 
         function syncSpecialRows() {
+            currentRows = currentRows.filter(r => r.artist !== "（迎賓プレイリストあり）" && r.artist !== "（お見送りプレイリストあり）");
+
             if (welcomeLoaded) {
-                const hasWelcomeRow = currentRows.some(r => r.scene === "迎賓" || r.artist.includes('迎賓'));
-                if (!hasWelcomeRow) {
-                    currentRows.unshift({
-                        id: generateId(),
-                        name: "",
-                        artist: "（迎賓プレイリストあり）",
-                        scene: "迎賓",
-                        cue: "",
-                        isBlank: false
-                    });
-                }
+                currentRows.unshift({
+                    id: generateId(),
+                    name: "",
+                    artist: "（迎賓プレイリストあり）",
+                    scene: "迎賓",
+                    cue: "",
+                    isBlank: false
+                });
             }
             if (farewellLoaded) {
-                const hasFarewellRow = currentRows.some(r => r.scene === "送賓" || r.artist.includes('お見送り'));
-                if (!hasFarewellRow) {
-                    currentRows.push({
-                        id: generateId(),
-                        name: "",
-                        artist: "（お見送りプレイリストあり）",
-                        scene: "送賓",
-                        cue: "",
-                        isBlank: false
-                    });
-                }
+                currentRows.push({
+                    id: generateId(),
+                    name: "",
+                    artist: "（お見送りプレイリストあり）",
+                    scene: "送賓",
+                    cue: "",
+                    isBlank: false
+                });
             }
             autoInsertGroupBlankRows();
             renderUI();
@@ -1421,7 +1464,7 @@
         function saveCurrentInputs() {
             const memoTextarea = document.querySelector('.memo-textarea');
             if (memoTextarea) {
-                welcomeMemoContent = memoTextarea.value;
+                // メモ欄全体の状態を保持
             }
 
             const rows = document.querySelectorAll('#playlist-tbody tr');
@@ -1548,6 +1591,8 @@
             let optionsHtml = SCENE_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
             let cueOptionsHtml = CUE_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
 
+            const currentMemoValue = [welcomeMemoContent, foodMemoContent, farewellMemoContent].filter(Boolean).join("\n\n").trim();
+
             let html = `
                 <div class="print-header">
                     <div id="display-datetime" class="print-datetime">${info.dateTimeText}</div>
@@ -1557,7 +1602,7 @@
                 <div class="layout-wrapper">
                     <div class="left-panel">
                         <h3>その他プレイリスト・メモ欄</h3>
-                        <textarea class="memo-textarea" placeholder="ここに迎賓曲や演出メモを自由に記入できます...">${welcomeMemoContent || (welcomeMemoContent + "\n" + farewellMemoContent).trim()}</textarea>
+                        <textarea class="memo-textarea" placeholder="ここに迎賓曲や演出メモを自由に記入できます...">${currentMemoValue}</textarea>
                         <div class="print-memo-container"></div>
                     </div>
 
@@ -1906,7 +1951,7 @@
                     rows.forEach(r => r.classList.remove('drag-over'));
                 });
 
-                row.addEventListener('dragover', (e) => {
+                handle.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     const targetRow = e.target.closest('tr');
                     if (targetRow && targetRow !== row) {
