@@ -297,7 +297,6 @@
             font-size: 16px;
             font-family: 'Klee One', cursive, sans-serif;
             font-weight: 600;
-            white-space: nowrap;
         }
 
         input.song-name-input {
@@ -312,6 +311,8 @@
             font-weight: 700;
             outline: none;
             transition: border-color 0.2s;
+            user-select: text !important;
+            -webkit-user-select: text !important;
         }
         input.song-name-input:focus {
             border-color: var(--primary);
@@ -330,6 +331,8 @@
             font-weight: 600;
             outline: none;
             transition: border-color 0.2s;
+            user-select: text !important;
+            -webkit-user-select: text !important;
         }
         input.artist-input:focus {
             border-color: var(--primary);
@@ -338,9 +341,8 @@
 
         .print-song-name, .print-artist-text { display: none; }
 
-        tr.draggable-row { cursor: grab; transition: background 0.15s; }
+        tr.draggable-row { transition: background 0.15s; }
         tr.draggable-row:hover { background: rgba(255, 255, 255, 0.02); }
-        tr.draggable-row:active { cursor: grabbing; }
         tr.dragging { opacity: 0.3; background: #334155 !important; }
         tr.drag-over { border-top: 2px solid var(--primary); }
 
@@ -349,6 +351,9 @@
             color: var(--text-sub);
             font-size: 16px;
             user-select: none;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
         }
 
         select.scene-select, select.cue-select {
@@ -783,8 +788,8 @@
             .print-cue-subtext {
                 display: block !important;
                 font-size: 11px !important;
-                font-weight: 900 !important; /* より太く強調 */
-                color: #dc2626 !important;    /* 視認性の高い赤色（濃いめ） */
+                font-weight: 900 !important;
+                color: #dc2626 !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
                 margin-top: 1px !important;
             }
@@ -1128,22 +1133,16 @@
 
         function syncSpecialRows() {
             if (welcomeLoaded) {
-                if (currentRows.length > 0 && currentRows[0].isBlank) {
-                    currentRows[0].name = "";
-                    currentRows[0].artist = "（迎賓プレイリストあり）";
-                    currentRows[0].scene = "迎賓";
-                } else {
-                    const hasWelcomeRow = currentRows.some(r => r.scene === "迎賓" && r.artist.includes('プレイリストあり'));
-                    if (!hasWelcomeRow) {
-                        currentRows.unshift({
-                            id: generateId(),
-                            name: "",
-                            artist: "（迎賓プレイリストあり）",
-                            scene: "迎賓",
-                            cue: "",
-                            isBlank: false
-                        });
-                    }
+                const hasWelcomeRow = currentRows.some(r => r.scene === "迎賓" || r.artist.includes('迎賓'));
+                if (!hasWelcomeRow) {
+                    currentRows.unshift({
+                        id: generateId(),
+                        name: "",
+                        artist: "（迎賓プレイリストあり）",
+                        scene: "迎賓",
+                        cue: "",
+                        isBlank: false
+                    });
                 }
             }
             if (farewellLoaded) {
@@ -1499,8 +1498,8 @@
             currentRows.forEach((r, idx) => {
                 if (r.isBlank) {
                     html += `
-                        <tr class="draggable-row" draggable="true" data-id="${r.id}" data-index="${idx}" style="height: 38px; background: rgba(255,255,255,0.01);">
-                            <td class="text-center action-column"><span class="drag-handle">☰</span></td>
+                        <tr class="draggable-row" data-id="${r.id}" data-index="${idx}" style="height: 38px; background: rgba(255,255,255,0.01);">
+                            <td class="text-center action-column"><span class="drag-handle" draggable="true">☰</span></td>
                             <td class="scene-td"></td>
                             <td></td>
                             <td></td>
@@ -1516,8 +1515,8 @@
                     const artistName = escapeHtml(r.artist || '');
 
                     html += `
-                        <tr class="draggable-row" draggable="true" data-id="${r.id}" data-index="${idx}">
-                            <td class="text-center action-column"><span class="drag-handle">☰</span></td>
+                        <tr class="draggable-row" data-id="${r.id}" data-index="${idx}">
+                            <td class="text-center action-column"><span class="drag-handle" draggable="true">☰</span></td>
                             <td class="scene-td">
                                 <select class="scene-select" onchange="handleSceneChange(this, ${idx})">
                                     <option value="">(選択)</option>
@@ -1785,12 +1784,15 @@
             const rows = tbody.querySelectorAll('tr.draggable-row');
 
             rows.forEach(row => {
-                row.addEventListener('dragstart', (e) => {
+                const handle = row.querySelector('.drag-handle');
+                if (!handle) return;
+
+                handle.addEventListener('dragstart', (e) => {
                     draggedIndex = parseInt(row.getAttribute('data-index'));
                     setTimeout(() => row.classList.add('dragging'), 0);
                 });
 
-                row.addEventListener('dragend', () => {
+                handle.addEventListener('dragend', () => {
                     row.classList.remove('dragging');
                     rows.forEach(r => r.classList.remove('drag-over'));
                 });
