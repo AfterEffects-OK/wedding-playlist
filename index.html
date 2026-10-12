@@ -93,7 +93,7 @@
         }
 
         .drop-zone.main-zone {
-            border-color: #0284c7;
+            border-color: #38bdf8;
             background: rgba(56, 189, 248, 0.05);
         }
         .drop-zone.main-zone:hover {
@@ -300,11 +300,43 @@
             white-space: nowrap;
         }
 
-        td.song-name-cell {
-            font-size: 18px !important;
-            font-weight: 700 !important;
+        input.song-name-input {
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid #475569;
             color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-family: 'Klee One', cursive, sans-serif;
+            font-weight: 700;
+            outline: none;
+            transition: border-color 0.2s;
         }
+        input.song-name-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        input.artist-input {
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #cbd5e1;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Klee One', cursive, sans-serif;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input.artist-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .print-song-name, .print-artist-text { display: none; }
 
         tr.draggable-row { cursor: grab; transition: background 0.15s; }
         tr.draggable-row:hover { background: rgba(255, 255, 255, 0.02); }
@@ -320,9 +352,9 @@
         }
 
         select.scene-select, select.cue-select {
-            background: var(--card-bg);
-            color: #7dd3fc;
-            border: 1px solid var(--card-border);
+            background: #1e293b;
+            color: #38bdf8;
+            border: 1px solid #475569;
             padding: 6px 10px;
             border-radius: 6px;
             font-size: 14px;
@@ -330,6 +362,10 @@
             font-weight: 700;
             width: 100%;
             outline: none;
+        }
+        select.scene-select:focus, select.cue-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
         }
 
         .print-scene-text, .print-cue-subtext { display: none; }
@@ -361,9 +397,221 @@
         }
         .row-delete-btn:hover { background: var(--danger); color: #fff; }
 
+        /* カスタムモーダルウィンドウ */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.25s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-box {
+            background: #1e293b;
+            border: 1px solid var(--card-border);
+            padding: 24px;
+            border-radius: 14px;
+            width: 480px;
+            max-width: 90vw;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95);
+            transition: transform 0.25s ease;
+        }
+        .modal-overlay.active .modal-box {
+            transform: scale(1);
+        }
+        .modal-box h3 {
+            font-size: 16px;
+            color: var(--primary);
+            margin-bottom: 14px;
+            font-weight: 700;
+        }
+        .modal-field {
+            margin-bottom: 14px;
+        }
+        .modal-field label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .modal-field input[type="text"] {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        .modal-field input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        /* 選択式ボタンエリア（チップ） */
+        .cue-chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            min-height: 55px;
+            align-items: center;
+        }
+        .cue-chip-btn {
+            background: #334155;
+            color: var(--text-main);
+            border: 1px solid #475569;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        .cue-chip-btn:hover {
+            background: var(--primary);
+            color: #0f172a;
+            border-color: var(--primary);
+        }
+        .cue-chip-btn.selected {
+            background: var(--primary);
+            color: #0f172a;
+            border-color: var(--primary);
+            box-shadow: 0 2px 6px rgba(56, 189, 248, 0.3);
+        }
+        .cue-chip-btn.time-chip {
+            background: #0369a1;
+            border-color: #38bdf8;
+            color: #f0f9ff;
+        }
+
+        /* 選択順序を表示するプレビューエリア */
+        .selected-sequence-box {
+            background: #0f172a;
+            border: 1px dashed var(--primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 600;
+            margin-top: 8px;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .clear-seq-btn {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* 時間指定ビルダー用ポップアップ/インラインエリア */
+        .time-builder-box {
+            background: #0f172a;
+            border: 1px solid var(--primary);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+        .time-builder-box.active {
+            display: block;
+        }
+        .time-input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .time-input-row input {
+            text-align: center;
+            font-weight: 700;
+            font-size: 15px;
+            background: #1e293b;
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 6px;
+            outline: none;
+        }
+        .time-input-row span {
+            font-size: 12px;
+            color: var(--text-sub);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* 定型ワードタグボタン */
+        .preset-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 6px;
+        }
+        .preset-tag-btn {
+            background: #1e293b;
+            color: var(--text-sub);
+            border: 1px solid var(--card-border);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-tag-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+        .modal-btn.cancel {
+            background: #334155;
+            color: var(--text-sub);
+        }
+        .modal-btn.cancel:hover { background: #475569; color: #fff; }
+        .modal-btn.submit {
+            background: var(--primary);
+            color: #0f172a;
+        }
+        .modal-btn.submit:hover { background: #7dd3fc; }
+
         .print-header { display: none; }
 
-        /* 印刷用スタイル（1ページに完全に収めるための最適化） */
+        /* 印刷用スタイル */
         @page {
             size: landscape;
             margin: 3mm;
@@ -389,7 +637,7 @@
                 width: 100% !important;
             }
 
-            .dropzones-wrapper, .controls, header, .subtitle, .action-column {
+            .dropzones-wrapper, .controls, header, .subtitle, .action-column, .modal-overlay {
                 display: none !important;
             }
 
@@ -473,7 +721,7 @@
                 border: 1px solid #ddd !important;
                 width: 100% !important;
                 border-radius: 0 !important;
-                table-layout: fixed !important;
+                table-layout: auto !important;
                 border-collapse: collapse !important;
             }
 
@@ -491,6 +739,15 @@
 
             th.scene-th, td.scene-td {
                 width: 85px !important;
+                max-width: 85px !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+            }
+
+            th.song-th, td.song-name-cell {
+                width: 1%;
+                white-space: nowrap !important;
+                max-width: 320px !important;
                 box-sizing: border-box !important;
             }
 
@@ -503,19 +760,31 @@
                 overflow: hidden !important;
             }
 
-            /* 印刷時：曲名（17px）の下に再生指示（10px・赤色の太字）を表示 */
-            td.song-name-cell {
+            input.song-name-input, input.artist-input { display: none !important; }
+
+            .print-song-name {
+                display: inline-block !important;
                 font-size: 17px !important;
                 font-weight: 900 !important;
                 color: #000 !important;
                 line-height: 1.15 !important;
+                white-space: nowrap !important;
+                transform-origin: left center !important;
+            }
+
+            .print-artist-text {
+                display: block !important;
+                font-size: 12px !important;
+                font-family: 'Klee One', cursive, sans-serif !important;
+                font-weight: 600 !important;
+                color: #000 !important;
             }
 
             .print-cue-subtext {
                 display: block !important;
-                font-size: 10px !important;
-                font-weight: bold !important;
-                color: #ef4444 !important;
+                font-size: 11px !important;
+                font-weight: 900 !important; /* より太く強調 */
+                color: #dc2626 !important;    /* 視認性の高い赤色（濃いめ） */
                 font-family: 'Klee One', cursive, sans-serif !important;
                 margin-top: 1px !important;
             }
@@ -530,9 +799,6 @@
                 white-space: nowrap !important;
                 transform-origin: left center !important;
             }
-            .print-scene-text.scale-80 { transform: scaleX(0.8) !important; }
-            .print-scene-text.scale-75 { transform: scaleX(0.75) !important; }
-            .print-scene-text.scale-100 { transform: scaleX(1.0) !important; }
         }
     </style>
 </head>
@@ -587,6 +853,67 @@
         <div id="main-content"></div>
     </div>
 
+    <!-- カスタム指示モーダル -->
+    <div id="time-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>🎛️ 再生指示の組み合わせと順番設定</h3>
+
+            <div class="modal-field">
+                <label>基本指示（クリックした順に組み合わせに追加されます）</label>
+                <div class="cue-chip-container" id="cue-chips-container">
+                    <button type="button" class="cue-chip-btn" onclick="addStandardCue('頭から')">頭から</button>
+                    <button type="button" class="cue-chip-btn" onclick="addStandardCue('サビから')">サビから</button>
+                    <button type="button" class="cue-chip-btn" onclick="addStandardCue('盛り上がりから')">盛り上がりから</button>
+                    <button type="button" class="cue-chip-btn" onclick="addStandardCue('フェードアウト')">フェードアウト</button>
+                    <button type="button" class="cue-chip-btn" onclick="addStandardCue('自然終了')">自然終了</button>
+                    <button type="button" class="cue-chip-btn" onclick="addStandardCue('曲つなぎ')">曲つなぎ</button>
+                    <button type="button" class="cue-chip-btn time-chip" onclick="toggleTimeBuilder()">⏱️ ＋時間指定の追加</button>
+                </div>
+
+                <!-- 時間指定をその場ですばやく追加するビルダーボックス -->
+                <div class="time-builder-box" id="time-builder-box">
+                    <label style="color: var(--primary); margin-bottom: 6px;">時間指定の作成</label>
+                    <div class="time-input-row">
+                        <input type="number" id="builder-min-input" placeholder="0" min="0" value="0" style="width: 55px;">
+                        <span>分</span>
+                        <input type="number" id="builder-sec-input" placeholder="16" min="0" max="59" value="16" style="width: 55px;">
+                        <span>秒 ～</span>
+                        <input type="text" id="builder-keyword-input" placeholder="キーワード" value="オープン" style="flex: 1;">
+                    </div>
+                    <div class="preset-tags">
+                        <button type="button" class="preset-tag-btn" onclick="selectPresetWord('オープン')">オープン</button>
+                        <button type="button" class="preset-tag-btn" onclick="selectPresetWord('ドアオープン')">ドアオープン</button>
+                        <button type="button" class="preset-tag-btn" onclick="selectPresetWord('再生')">再生</button>
+                        <button type="button" class="preset-tag-btn" onclick="selectPresetWord('入刀')">入刀</button>
+                        <button type="button" class="preset-tag-btn" onclick="selectPresetWord('メイン')">メイン</button>
+                        <button type="button" class="preset-tag-btn" onclick="selectPresetWord('贈呈')">贈呈</button>
+                        <button type="button" class="preset-tag-btn" onclick="selectPresetWord('入場')">入場</button>
+                        <button type="button" class="preset-tag-btn" onclick="selectPresetWord('退場')">退場</button>
+                    </div>
+                    <div style="text-align: right; margin-top: 8px;">
+                        <button type="button" class="modal-btn submit" style="padding: 4px 12px; font-size: 12px;" onclick="commitTimeCue()">この時間指定を追加</button>
+                    </div>
+                </div>
+
+                <label style="font-size: 11px; color: var(--text-sub); margin-top: 8px;">現在の組み合わせ順序プレビュー：</label>
+                <div class="selected-sequence-box">
+                    <span id="sequence-preview-text">（選択なし）</span>
+                    <button type="button" class="clear-seq-btn" onclick="clearSequence()">全クリア</button>
+                </div>
+            </div>
+
+            <div class="modal-field">
+                <label>その他のメモ・自由記述</label>
+                <input type="text" id="modal-free-input" placeholder="例: 2番サビから大サビへカット">
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeTimeModal(false)">キャンセル</button>
+                <button class="modal-btn submit" onclick="closeTimeModal(true)">決定</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SCENE_OPTIONS = [
             "迎賓", "入場", "乾杯準備", "乾杯", "ケーキ準備", "ケーキ入刀", "シェアリング", "歓談",
@@ -595,7 +922,7 @@
         ];
 
         const CUE_OPTIONS = [
-            "頭から", "サビから", "盛り上がりから", "フェードアウト", "自然終了", "曲つなぎ", "自由入力..."
+            "頭から", "サビから", "盛り上がりから", "フェードアウト", "自然終了", "曲つなぎ", "時間指定 / 複数選択...", "指示をクリア"
         ];
 
         const GROUP_MAP = {
@@ -612,6 +939,11 @@
         let welcomeLoaded = false;
         let farewellLoaded = false;
         let autoInsertTimer = null;
+        let memoDebounceTimer = null;
+
+        let activeTimeSelectEl = null;
+        let activeTimeRowIdx = null;
+        let selectedCueSequence = [];
 
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -940,6 +1272,81 @@
             renderUI();
         }
 
+        function updateSongName(inputEl, idx) {
+            currentRows[idx].name = inputEl.value;
+            const tr = inputEl.closest('tr');
+            if (tr) {
+                const printSpan = tr.querySelector('.print-song-name');
+                if (printSpan) {
+                    printSpan.innerText = inputEl.value;
+                    applySongNameScale(printSpan, inputEl.value);
+                }
+            }
+        }
+
+        function updateArtist(inputEl, idx) {
+            currentRows[idx].artist = inputEl.value;
+            const tr = inputEl.closest('tr');
+            if (tr) {
+                const printSpan = tr.querySelector('.print-artist-text');
+                if (printSpan) printSpan.innerText = inputEl.value;
+            }
+        }
+
+        function applySongNameScale(spanEl, text) {
+            if (!text) {
+                spanEl.style.transform = 'scaleX(1)';
+                return;
+            }
+            const maxAllowWidth = 310;
+            const measureSpan = document.createElement('span');
+            measureSpan.style.visibility = 'hidden';
+            measureSpan.style.position = 'absolute';
+            measureSpan.style.whiteSpace = 'nowrap';
+            measureSpan.style.fontSize = '17px';
+            measureSpan.style.fontWeight = '900';
+            measureSpan.style.fontFamily = "'Klee One', cursive, sans-serif";
+            measureSpan.innerText = text;
+            document.body.appendChild(measureSpan);
+
+            const actualWidth = measureSpan.offsetWidth;
+            document.body.removeChild(measureSpan);
+
+            if (actualWidth > maxAllowWidth) {
+                const scale = maxAllowWidth / actualWidth;
+                spanEl.style.transform = `scaleX(${Math.max(scale, 0.5)})`;
+            } else {
+                spanEl.style.transform = 'scaleX(1)';
+            }
+        }
+
+        function applySceneScale(spanEl, text) {
+            if (!text) {
+                spanEl.style.transform = 'scaleX(1)';
+                return;
+            }
+            const maxAllowWidth = 75;
+            const measureSpan = document.createElement('span');
+            measureSpan.style.visibility = 'hidden';
+            measureSpan.style.position = 'absolute';
+            measureSpan.style.whiteSpace = 'nowrap';
+            measureSpan.style.fontSize = '12px';
+            measureSpan.style.fontWeight = '700';
+            measureSpan.style.fontFamily = "'Klee One', cursive, sans-serif";
+            measureSpan.innerText = text;
+            document.body.appendChild(measureSpan);
+
+            const actualWidth = measureSpan.offsetWidth;
+            document.body.removeChild(measureSpan);
+
+            if (actualWidth > maxAllowWidth) {
+                const scale = maxAllowWidth / actualWidth;
+                spanEl.style.transform = `scaleX(${Math.max(scale, 0.5)})`;
+            } else {
+                spanEl.style.transform = 'scaleX(1)';
+            }
+        }
+
         function saveCurrentInputs() {
             const memoTextarea = document.querySelector('.memo-textarea');
             if (memoTextarea) {
@@ -954,8 +1361,13 @@
                     if (rowData && !rowData.isBlank) {
                         const sceneSelect = tr.querySelector('.scene-select');
                         const cueSelect = tr.querySelector('.cue-select');
+                        const nameInput = tr.querySelector('.song-name-input');
+                        const artistInput = tr.querySelector('.artist-input');
+
                         if (sceneSelect) rowData.scene = sceneSelect.value;
                         if (cueSelect) rowData.cue = cueSelect.value;
+                        if (nameInput) rowData.name = nameInput.value;
+                        if (artistInput) rowData.artist = artistInput.value;
                     }
                 }
             });
@@ -1051,13 +1463,6 @@
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
-        function getSceneScaleClass(text) {
-            if (!text) return 'scale-100';
-            if (text.length >= 8) return 'scale-75';
-            if (text.length >= 6) return 'scale-80';
-            return 'scale-100';
-        }
-
         function renderUI() {
             saveCurrentInputs();
             const info = getHeaderText();
@@ -1083,7 +1488,7 @@
                                 <tr>
                                     <th style="width: 32px;" class="action-column"></th>
                                     <th class="scene-th">シーン</th>
-                                    <th>曲名</th>
+                                    <th class="song-th">曲名</th>
                                     <th>アーティスト</th>
                                     <th style="width: 120px; text-align: center;" class="action-column">操作</th>
                                 </tr>
@@ -1106,8 +1511,9 @@
                     `;
                 } else {
                     const sceneText = r.scene || '';
-                    const scaleClass = getSceneScaleClass(sceneText);
                     const cueText = r.cue || '';
+                    const songName = escapeHtml(r.name || '');
+                    const artistName = escapeHtml(r.artist || '');
 
                     html += `
                         <tr class="draggable-row" draggable="true" data-id="${r.id}" data-index="${idx}">
@@ -1117,19 +1523,23 @@
                                     <option value="">(選択)</option>
                                     ${optionsHtml}
                                 </select>
-                                <span class="print-scene-text ${scaleClass}">${sceneText}</span>
+                                <span class="print-scene-text">${sceneText}</span>
                             </td>
                             <td class="song-name-cell">
-                                <div>${r.name}</div>
+                                <input type="text" class="song-name-input" value="${songName}" oninput="updateSongName(this, ${idx})" placeholder="曲名を入力...">
+                                <span class="print-song-name">${songName}</span>
                                 <span class="print-cue-subtext">${cueText}</span>
                                 <div style="margin-top: 4px;">
                                     <select class="cue-select" onchange="updateCustomText(this, 'cue', ${idx})">
-                                        <option value="">(再生指示なし)</option>
+                                        <option value="">(再生指示を選択)</option>
                                         ${cueOptionsHtml}
                                     </select>
                                 </div>
                             </td>
-                            <td style="color: #cbd5e1;">${r.artist}</td>
+                            <td>
+                                <input type="text" class="artist-input" value="${artistName}" oninput="updateArtist(this, ${idx})" placeholder="アーティスト名...">
+                                <span class="print-artist-text">${artistName}</span>
+                            </td>
                             <td style="text-align: center; white-space: nowrap;" class="action-column">
                                 <button class="row-action-btn" onclick="insertBlankRow(${idx})">＋空白</button>
                                 <button class="row-delete-btn" onclick="removeRow(${idx})">削除</button>
@@ -1148,10 +1558,26 @@
 
             mainContent.innerHTML = html;
 
+            currentRows.forEach((r, idx) => {
+                if (!r.isBlank) {
+                    const tr = document.querySelector(`tr[data-id="${r.id}"]`);
+                    if (tr) {
+                        const printSongSpan = tr.querySelector('.print-song-name');
+                        if (printSongSpan) applySongNameScale(printSongSpan, r.name || '');
+
+                        const printSceneSpan = tr.querySelector('.print-scene-text');
+                        if (printSceneSpan) applySceneScale(printSceneSpan, r.scene || '');
+                    }
+                }
+            });
+
             const memoTextarea = document.querySelector('.memo-textarea');
             if (memoTextarea) {
                 memoTextarea.addEventListener('input', function() {
-                    updatePrintMemoBox(this);
+                    if (memoDebounceTimer) clearTimeout(memoDebounceTimer);
+                    memoDebounceTimer = setTimeout(() => {
+                        updatePrintMemoBox(this);
+                    }, 150);
                 });
                 setTimeout(() => updatePrintMemoBox(memoTextarea), 50);
             }
@@ -1173,7 +1599,7 @@
                             sceneSelect.value = r.scene;
                             const spanEl = sceneSelect.nextElementSibling;
                             spanEl.innerText = r.scene;
-                            spanEl.className = `print-scene-text ${getSceneScaleClass(r.scene)}`;
+                            applySceneScale(spanEl, r.scene);
                         }
                         if (cueSelect && r.cue) {
                             if (!Array.from(cueSelect.options).some(o => o.value === r.cue)) {
@@ -1205,50 +1631,39 @@
         }
 
         function updateCustomText(selectEl, type, idx) {
-            const promptMsg = type === 'scene' ? "シーン名を入力してください:" : "再生指示を入力してください:";
-            
-            if (selectEl.value === "自由入力...") {
-                const custom = prompt(promptMsg, "");
+            if (type === 'scene' && selectEl.value === "自由入力...") {
+                const custom = prompt("シーン名を入力してください:", "");
                 if (custom) {
                     const newOpt = document.createElement("option");
                     newOpt.value = custom;
                     newOpt.innerText = custom;
                     newOpt.selected = true;
                     selectEl.insertBefore(newOpt, selectEl.lastElementChild);
-                    
-                    if (type === 'scene') {
-                        currentRows[idx].scene = custom;
-                        const spanEl = selectEl.nextElementSibling;
-                        spanEl.innerText = custom;
-                        spanEl.className = `print-scene-text ${getSceneScaleClass(custom)}`;
-                    }
-                    if (type === 'cue') {
-                        currentRows[idx].cue = custom;
-                        const tr = selectEl.closest('tr');
-                        const cueSubSpan = tr.querySelector('.print-cue-subtext');
-                        if (cueSubSpan) cueSubSpan.innerText = custom;
-                    }
+                    currentRows[idx].scene = custom;
+                    const spanEl = selectEl.nextElementSibling;
+                    spanEl.innerText = custom;
+                    applySceneScale(spanEl, custom);
                 } else {
                     selectEl.value = "";
-                    if (type === 'scene') {
-                        currentRows[idx].scene = "";
-                        const spanEl = selectEl.nextElementSibling;
-                        spanEl.innerText = "";
-                        spanEl.className = "print-scene-text scale-100";
-                    }
-                    if (type === 'cue') {
-                        currentRows[idx].cue = "";
-                        const tr = selectEl.closest('tr');
-                        const cueSubSpan = tr.querySelector('.print-cue-subtext');
-                        if (cueSubSpan) cueSubSpan.innerText = "";
-                    }
+                    currentRows[idx].scene = "";
+                    const spanEl = selectEl.nextElementSibling;
+                    spanEl.innerText = "";
+                    spanEl.style.transform = 'scaleX(1)';
                 }
+            } else if (type === 'cue' && selectEl.value === "時間指定 / 複数選択...") {
+                openCueModal(selectEl, idx);
+            } else if (type === 'cue' && selectEl.value === "指示をクリア") {
+                currentRows[idx].cue = "";
+                selectEl.value = "";
+                const tr = selectEl.closest('tr');
+                const cueSubSpan = tr.querySelector('.print-cue-subtext');
+                if (cueSubSpan) cueSubSpan.innerText = "";
             } else {
                 if (type === 'scene') {
                     currentRows[idx].scene = selectEl.value;
                     const spanEl = selectEl.nextElementSibling;
                     spanEl.innerText = selectEl.value;
-                    spanEl.className = `print-scene-text ${getSceneScaleClass(selectEl.value)}`;
+                    applySceneScale(spanEl, selectEl.value);
                 }
                 if (type === 'cue') {
                     currentRows[idx].cue = selectEl.value;
@@ -1257,6 +1672,111 @@
                     if (cueSubSpan) cueSubSpan.innerText = selectEl.value;
                 }
             }
+        }
+
+        function openCueModal(selectEl, idx) {
+            activeTimeSelectEl = selectEl;
+            activeTimeRowIdx = idx;
+            selectedCueSequence = [];
+
+            const existingCue = currentRows[idx].cue || "";
+            if (existingCue) {
+                const parts = existingCue.split(/\s*[\/➔]\s*/);
+                parts.forEach(p => {
+                    if (p.trim()) {
+                        selectedCueSequence.push(p.trim());
+                    }
+                });
+            }
+
+            document.getElementById('modal-free-input').value = "";
+            document.getElementById('time-builder-box').classList.remove('active');
+            updateSequencePreview();
+            document.getElementById('time-modal').classList.add('active');
+        }
+
+        function addStandardCue(cueName) {
+            selectedCueSequence.push(cueName);
+            updateSequencePreview();
+        }
+
+        function toggleTimeBuilder() {
+            const builder = document.getElementById('time-builder-box');
+            builder.classList.toggle('active');
+            if (builder.classList.contains('active')) {
+                document.getElementById('builder-sec-input').focus();
+            }
+        }
+
+        function selectPresetWord(word) {
+            document.getElementById('builder-keyword-input').value = word;
+        }
+
+        function commitTimeCue() {
+            const minVal = parseInt(document.getElementById('builder-min-input').value, 10) || 0;
+            const secVal = parseInt(document.getElementById('builder-sec-input').value, 10) || 0;
+            const keywordVal = document.getElementById('builder-keyword-input').value.trim();
+
+            const timeStr = `${minVal}'${String(secVal).padStart(2, '0')}"`;
+            const timeCue = keywordVal ? `${timeStr}～${keywordVal}` : `${timeStr}～`;
+
+            selectedCueSequence.push(timeCue);
+            updateSequencePreview();
+            document.getElementById('time-builder-box').classList.remove('active');
+        }
+
+        function clearSequence() {
+            selectedCueSequence = [];
+            updateSequencePreview();
+        }
+
+        function updateSequencePreview() {
+            const previewEl = document.getElementById('sequence-preview-text');
+            if (selectedCueSequence.length > 0) {
+                previewEl.innerText = selectedCueSequence.join(' ➔ ');
+            } else {
+                previewEl.innerText = '（選択なし）';
+            }
+        }
+
+        function closeTimeModal(isConfirmed) {
+            const modal = document.getElementById('time-modal');
+            modal.classList.remove('active');
+
+            if (isConfirmed && activeTimeSelectEl && activeTimeRowIdx !== null) {
+                let cueParts = [...selectedCueSequence];
+
+                const freeVal = document.getElementById('modal-free-input').value.trim();
+                if (freeVal) {
+                    cueParts.push(freeVal);
+                }
+
+                const finalVal = cueParts.join(' / ');
+
+                if (finalVal) {
+                    if (!Array.from(activeTimeSelectEl.options).some(o => o.value === finalVal)) {
+                        const newOpt = document.createElement("option");
+                        newOpt.value = finalVal;
+                        newOpt.innerText = finalVal;
+                        newOpt.selected = true;
+                        activeTimeSelectEl.insertBefore(newOpt, activeTimeSelectEl.lastElementChild);
+                    }
+                    activeTimeSelectEl.value = finalVal;
+                    currentRows[activeTimeRowIdx].cue = finalVal;
+                } else {
+                    activeTimeSelectEl.value = "";
+                    currentRows[activeTimeRowIdx].cue = "";
+                }
+
+                const tr = activeTimeSelectEl.closest('tr');
+                const cueSubSpan = tr.querySelector('.print-cue-subtext');
+                if (cueSubSpan) cueSubSpan.innerText = finalVal;
+            } else if (!isConfirmed && activeTimeSelectEl) {
+                activeTimeSelectEl.value = currentRows[activeTimeRowIdx].cue || "";
+            }
+
+            activeTimeSelectEl = null;
+            activeTimeRowIdx = null;
         }
 
         function initDragAndDrop() {
