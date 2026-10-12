@@ -363,7 +363,7 @@
             border: 1px solid #475569;
             padding: 6px 10px;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 16px;
             font-family: 'Klee One', cursive, sans-serif;
             font-weight: 700;
             width: 100%;
@@ -664,7 +664,7 @@
         /* 印刷用スタイル */
         @page {
             size: landscape;
-            margin: 3mm;
+            margin: 2mm 6mm 2mm 6mm; /* 上端、右端、下端、左端 */
         }
 
         @media print {
@@ -683,6 +683,7 @@
                 box-shadow: none !important;
                 border: none !important;
                 padding: 0 !important;
+                margin: 0 !important;
                 max-width: 100% !important;
                 width: 100% !important;
             }
@@ -699,6 +700,7 @@
                 color: #000 !important;
                 margin-bottom: 2px !important;
                 padding-bottom: 2px !important;
+                padding-left: 2px !important;
                 border-bottom: 2px solid #000 !important;
             }
 
@@ -723,8 +725,9 @@
                 display: flex !important;
                 align-items: baseline !important;
             }
-            .print-header h2 .couple-name-large { font-size: 20px !important; font-weight: bold !important; }
-            .print-header h2 .honorific-small { font-size: 14px !important; font-weight: normal !important; }
+            .print-header h2 .couple-name-large { font-size: 22px !important; font-weight: bold !important; }
+            .print-header h2 .honorific-small { font-size: 14px !important; font-weight: normal !important; margin-right: 12px !important; }
+            .print-header h2 .playlist-title-text { margin-left: 8px !important; }
 
             .print-header .return-cd-print {
                 margin-left: 40px !important;
@@ -828,29 +831,31 @@
 
             .print-song-name {
                 display: inline-block !important;
-                font-size: 17px !important;
+                font-size: 22px !important;
                 font-weight: 900 !important;
                 color: #000 !important;
-                line-height: 1.15 !important;
+                line-height: 1.05 !important;
                 white-space: nowrap !important;
                 transform-origin: left center !important;
             }
 
             .print-artist-text {
                 display: block !important;
-                font-size: 12px !important;
+                font-size: 16px !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
-                font-weight: 600 !important;
+                font-weight: 700 !important;
                 color: #000 !important;
+                margin-top: 1px !important;
             }
 
             .print-cue-subtext {
                 display: block !important;
-                font-size: 11px !important;
+                font-size: 14px !important;
                 font-weight: 900 !important;
                 color: #dc2626 !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
-                margin-top: 1px !important;
+                margin-top: -1px !important;
+                line-height: 1.1 !important;
             }
 
             select.scene-select, select.cue-select { display: none !important; }
@@ -858,7 +863,7 @@
             .print-scene-text {
                 display: inline-block !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
-                font-size: 12px !important;
+                font-size: 14px !important;
                 font-weight: 700 !important;
                 white-space: nowrap !important;
                 transform-origin: left center !important;
@@ -906,7 +911,7 @@
                 </div>
                 <div class="field-item">
                     <label>新郎・新婦名 / 宴名</label>
-                    <input type="text" id="input-couple" value="本林諒真・竹下由希子">
+                    <input type="text" id="input-couple" value="本林諒真 竹下由希子">
                 </div>
                 <div class="field-item">
                     <label>返却CD枚数</label>
@@ -1062,6 +1067,7 @@
                     .replace(/^\d{4}[./-]?\d{1,2}[./-]?\d{1,2}[_\s-]*/, '')
                     .replace(/^\d{1,2}[月./\-_]+\d{1,2}[_\s-]*/, '')
                     .replace(/メインBGM|迎賓|お見送り|送賓|食事BGM|歓談曲|プレイリスト/g, '')
+                    .replace(/[・]/g, ' ')
                     .trim();
 
                 if (cleaned) {
@@ -1123,7 +1129,6 @@
         }
 
         function handleSpecialFiles(files) {
-            let processedCount = 0;
             Array.from(files).forEach(file => {
                 const fileName = file.name;
                 const reader = new FileReader();
@@ -1141,7 +1146,6 @@
                         loadedSpecialFileNames.push(fileName);
                     }
 
-                    processedCount++;
                     const statusEl = document.getElementById('welcome-status');
                     statusEl.innerText = '読み込み完了: ' + loadedSpecialFileNames.join(', ');
                     statusEl.classList.add('loaded');
@@ -1417,7 +1421,7 @@
             measureSpan.style.visibility = 'hidden';
             measureSpan.style.position = 'absolute';
             measureSpan.style.whiteSpace = 'nowrap';
-            measureSpan.style.fontSize = '17px';
+            measureSpan.style.fontSize = '20px';
             measureSpan.style.fontWeight = '900';
             measureSpan.style.fontFamily = "'Klee One', cursive, sans-serif";
             measureSpan.innerText = text;
@@ -1444,7 +1448,7 @@
             measureSpan.style.visibility = 'hidden';
             measureSpan.style.position = 'absolute';
             measureSpan.style.whiteSpace = 'nowrap';
-            measureSpan.style.fontSize = '12px';
+            measureSpan.style.fontSize = '14px';
             measureSpan.style.fontWeight = '700';
             measureSpan.style.fontFamily = "'Klee One', cursive, sans-serif";
             measureSpan.innerText = text;
@@ -1462,11 +1466,6 @@
         }
 
         function saveCurrentInputs() {
-            const memoTextarea = document.querySelector('.memo-textarea');
-            if (memoTextarea) {
-                // メモ欄全体の状態を保持
-            }
-
             const rows = document.querySelectorAll('#playlist-tbody tr');
             rows.forEach((tr) => {
                 const rowId = tr.getAttribute('data-id');
@@ -1494,10 +1493,10 @@
             const cdCountVal = parseInt(document.getElementById('input-cd-count').value, 10) || 0;
             const dvdCountVal = parseInt(document.getElementById('input-dvd-count').value, 10) || 0;
             
-            let processedCouple = coupleVal.trim();
+            let processedCouple = coupleVal.trim().replace(/[・]/g, ' ');
             if (processedCouple) {
                 if (!processedCouple.includes('様')) {
-                    processedCouple = processedCouple.replace(/([・\s]+)/g, '<span class="honorific-small">様</span>$1') + '<span class="honorific-small">様</span>';
+                    processedCouple = processedCouple.replace(/(\s+)/g, '<span class="honorific-small">様</span>$1') + '<span class="honorific-small">様</span>';
                 } else {
                     processedCouple = processedCouple.replace(/様/g, '<span class="honorific-small">様</span>');
                 }
@@ -1509,7 +1508,7 @@
             }
 
             const returnCdText = `<span class="return-cd-print">${returnMediaStr}</span>`;
-            const coupleText = `<span class="couple-name-large">${processedCouple}</span> 披露宴BGMプレイリスト ${returnCdText}`;
+            const coupleText = `<span class="couple-name-large">${processedCouple}</span><span class="playlist-title-text">披露宴BGMプレイリスト</span> ${returnCdText}`;
             
             let formattedDate = dateVal;
             if (dateVal) {
