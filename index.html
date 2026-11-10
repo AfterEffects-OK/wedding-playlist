@@ -188,6 +188,31 @@
         input[type="number"].media-count-input { width: 85px; text-align: center; font-weight: 600; }
         select.time-select { width: 130px; font-weight: 600; }
 
+        .btn-group-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-sub-action {
+            background: var(--card-border);
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-sub-action:hover {
+            background: #475569;
+            transform: translateY(-1px);
+        }
+
         .btn-print {
             background: var(--primary);
             color: #0f172a;
@@ -924,9 +949,20 @@
                     <input type="number" id="input-dvd-count" class="media-count-input" min="0" value="0" placeholder="0">
                 </div>
             </div>
-            <button class="btn-print" onclick="window.print()">
-                <span>🖨️ A4横向きで印刷する</span>
-            </button>
+            
+            <div class="btn-group-right">
+                <button class="btn-sub-action" onclick="exportProjectData()" title="現在の作業状態をファイルに保存します">
+                    <span>💾 設定を保存</span>
+                </button>
+                <button class="btn-sub-action" onclick="document.getElementById('import-json-input').click()" title="保存したファイルから続きを再開します">
+                    <span>📂 続きを読み込む</span>
+                </button>
+                <input type="file" id="import-json-input" accept=".json" style="display: none;" onchange="importProjectData(event)">
+
+                <button class="btn-print" onclick="window.print()">
+                    <span>🖨️ A4横向きで印刷する</span>
+                </button>
+            </div>
         </div>
 
         <div id="main-content"></div>
@@ -1478,7 +1514,7 @@
                 const rowId = tr.getAttribute('data-id');
                 if (rowId) {
                     const rowData = currentRows.find(r => r.id === rowId);
-                    if (rowData && !rowData.isBlank) {
+                    if (rowData) {
                         const sceneSelect = tr.querySelector('.scene-select');
                         const cueSelect = tr.querySelector('.cue-select');
                         const nameInput = tr.querySelector('.song-name-input');
@@ -1491,6 +1527,87 @@
                     }
                 }
             });
+        }
+
+        // ==========================================
+        // プロジェクトデータの保存（エクスポート）と読み込み（インポート）
+        // ==========================================
+        function exportProjectData() {
+            saveCurrentInputs(); // 最新のDOM入力を反映
+
+            const projectData = {
+                version: "1.0",
+                date: document.getElementById('input-date').value,
+                time: document.getElementById('input-time').value,
+                couple: document.getElementById('input-couple').value,
+                cdCount: document.getElementById('input-cd-count').value,
+                dvdCount: document.getElementById('input-dvd-count').value,
+                memoContent: document.querySelector('.memo-textarea') ? document.querySelector('.memo-textarea').value : "",
+                rows: currentRows
+            };
+
+            const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            const coupleName = document.getElementById('input-couple').value.trim() || 'wedding_playlist';
+            a.download = `${coupleName}_BGM指示書_backup.json`;
+            a.href = url;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importProjectData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (data.date) document.getElementById('input-date').value = data.date;
+                    if (data.time) {
+                        const timeSelect = document.getElementById('input-time');
+                        if (!Array.from(timeSelect.options).some(o => o.value === data.time)) {
+                            const newOpt = document.createElement("option");
+                            newOpt.value = data.time;
+                            newOpt.innerText = data.time;
+                            newOpt.selected = true;
+                            timeSelect.insertBefore(newOpt, timeSelect.lastElementChild);
+                        }
+                        timeSelect.value = data.time;
+                    }
+                    if (data.couple) document.getElementById('input-couple').value = data.couple;
+                    if (data.cdCount !== undefined) document.getElementById('input-cd-count').value = data.cdCount;
+                    if (data.dvdCount !== undefined) document.getElementById('input-dvd-count').value = data.dvdCount;
+
+                    if (Array.isArray(data.rows)) {
+                        currentRows = data.rows;
+                    }
+
+                    if (data.memoContent !== undefined) {
+                        const memoTextarea = document.querySelector('.memo-textarea');
+                        if (memoTextarea) {
+                            memoTextarea.value = data.memoContent;
+                            updatePrintMemoBox(memoTextarea);
+                        } else {
+                            welcomeMemoContent = data.memoContent;
+                        }
+                    }
+
+                    controlsSection.style.display = 'flex';
+                    renderUI();
+                    updateHeaderPreview();
+
+                    alert('保存データを正常に読み込みました！');
+                } catch (err) {
+                    console.error(err);
+                    alert('ファイルの読み込みに失敗しました。正しいバックアップ用JSONファイルを選択してください。');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file, 'UTF-8');
         }
 
         function getHeaderText() {
@@ -1597,7 +1714,8 @@
             let optionsHtml = SCENE_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
             let cueOptionsHtml = CUE_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
 
-            const currentMemoValue = [welcomeMemoContent, foodMemoContent, farewellMemoContent].filter(Boolean).join("\n\n").trim();
+            const memoTextareaEl = document.querySelector('.memo-textarea');
+            const currentMemoValue = memoTextareaEl ? memoTextareaEl.value : [welcomeMemoContent, foodMemoContent, farewellMemoContent].filter(Boolean).join("\n\n").trim();
 
             let html = `
                 <div class="print-header">
@@ -1687,6 +1805,7 @@
             `;
 
             mainContent.innerHTML = html;
+            controlsSection.style.display = 'flex';
 
             currentRows.forEach((r, idx) => {
                 if (!r.isBlank) {
