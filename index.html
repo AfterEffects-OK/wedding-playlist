@@ -920,10 +920,13 @@
                 <div id="main-status" class="file-status">未読み込み</div>
                 <input type="file" id="file-input" accept=".txt,.csv" style="display: none;">
             </div>
-            <div class="import-initial-wrapper" style="grid-column: 1 / -1; text-align: center; margin-top: 10px;">
-                <button class="btn-sub-action" onclick="document.getElementById('import-json-input').click()" title="保存したファイルから続きを再開します">
-                    <span>続きを読み込む</span>
-                </button>
+            <!-- 【変更】「続きを読み込む」をドロップゾーンと同じデザインにし、ドロップ＆クリックに対応 -->
+            <div id="import-drop-zone" class="drop-zone import-zone" style="border-color: #10b981; background: rgba(16, 185, 129, 0.05); cursor: pointer;" onclick="document.getElementById('import-json-input').click()">
+                <div class="drop-title" style="color: var(--success);">📂 続きを読み込む</div>
+                <p>保存したバックアップファイルをドロップ</p>
+                <span class="sub-text">（またはクリックしてファイルを選択）</span>
+                <div id="import-status" class="file-status">バックアップ .json</div>
+                <input type="file" id="import-json-input" accept=".json" style="display: none;" onchange="importProjectData(event)">
             </div>
         </div>
 
@@ -1150,6 +1153,27 @@
                 handleSpecialFiles(e.target.files);
             }
         });
+
+        const importDropZone = document.getElementById('import-drop-zone');
+        if (importDropZone) {
+            importDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                importDropZone.style.borderColor = '#34d399';
+            });
+            importDropZone.addEventListener('dragleave', () => {
+                importDropZone.style.borderColor = '#10b981';
+            });
+            importDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                importDropZone.style.borderColor = '#10b981';
+                if (e.dataTransfer.files.length) {
+                    const file = e.dataTransfer.files[0];
+                    // 既存のインポート処理用イベントオブジェクトを擬似的に作成して実行
+                    const fakeEvent = { target: { files: [file], value: '' } };
+                    importProjectData(fakeEvent);
+                }
+            });
+        }
 
         document.getElementById('input-date').addEventListener('input', updateHeaderPreview);
         document.getElementById('input-time').addEventListener('change', updateHeaderPreview);
