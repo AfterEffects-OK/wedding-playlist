@@ -920,6 +920,11 @@
                 <div id="main-status" class="file-status">未読み込み</div>
                 <input type="file" id="file-input" accept=".txt,.csv" style="display: none;">
             </div>
+            <div class="import-initial-wrapper" style="grid-column: 1 / -1; text-align: center; margin-top: 10px;">
+                <button class="btn-sub-action" onclick="document.getElementById('import-json-input').click()" title="保存したファイルから続きを再開します">
+                    <span>続きを読み込む</span>
+                </button>
+            </div>
         </div>
 
         <div class="controls" id="controls-section" style="display: none;">
@@ -954,9 +959,7 @@
                 <button class="btn-sub-action" onclick="exportProjectData()" title="現在の作業状態をファイルに保存します">
                     <span>設定を保存</span>
                 </button>
-                <button class="btn-sub-action" onclick="document.getElementById('import-json-input').click()" title="保存したファイルから続きを再開します">
-                    <span>続きを読み込む</span>
-                </button>
+                
                 <input type="file" id="import-json-input" accept=".json" style="display: none;" onchange="importProjectData(event)">
 
                 <button class="btn-print" onclick="window.print()">
