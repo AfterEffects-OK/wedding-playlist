@@ -805,6 +805,12 @@
                 overflow: hidden !important;
             }
 
+            .print-memo-line {
+                display: inline-block !important;
+                white-space: pre !important;
+                transform-origin: left center !important;
+            }
+
             .right-panel {
                 flex: 2.7 !important;
                 overflow: visible !important;
@@ -867,22 +873,26 @@
             }
 
             .print-artist-text {
-                display: block !important;
+                display: inline-block !important;
                 font-size: 16px !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
                 font-weight: 700 !important;
                 color: #000 !important;
                 margin-top: 1px !important;
+                white-space: nowrap !important;
+                transform-origin: left center !important;
             }
 
             .print-cue-subtext {
-                display: block !important;
+                display: inline-block !important;
                 font-size: 14px !important;
                 font-weight: 900 !important;
                 color: #dc2626 !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
                 margin-top: -1px !important;
                 line-height: 1.1 !important;
+                white-space: nowrap !important;
+                transform-origin: left center !important;
             }
 
             select.scene-select, select.cue-select { display: none !important; }
@@ -920,7 +930,7 @@
                 <div id="main-status" class="file-status">未読み込み</div>
                 <input type="file" id="file-input" accept=".txt,.csv" style="display: none;">
             </div>
-            <!-- 【変更】「続きを読み込む」をドロップゾーンと同じデザインにし、ドロップ＆クリックに対応 -->
+            <!-- 「続きを読み込む」をドロップゾーンと同じデザインにし、ドロップ＆クリックに対応 -->
             <div id="import-drop-zone" class="drop-zone import-zone" style="border-color: #10b981; background: rgba(16, 185, 129, 0.05); cursor: pointer;" onclick="document.getElementById('import-json-input').click()">
                 <div class="drop-title" style="color: var(--success);">📂 続きを読み込む</div>
                 <p>保存したバックアップファイルをドロップ</p>
@@ -963,8 +973,6 @@
                     <span>設定を保存</span>
                 </button>
                 
-                <input type="file" id="import-json-input" accept=".json" style="display: none;" onchange="importProjectData(event)">
-
                 <button class="btn-print" onclick="window.print()">
                     <span>A4横向きで印刷</span>
                 </button>
@@ -1060,6 +1068,8 @@
             "再入場": "middle_reentry", "テーブルラウンド": "middle_other", "フォトラウンド": "middle_other", "キャンドル": "middle_other", "メイン演出": "middle_other",
             "新婦手紙": "back", "花束贈呈": "back", "両家代表謝辞": "back", "おひらき": "back", "退場": "back", "送賓": "back"
         };
+
+        const MIN_SCALE_X = 0.5; // 文字幅の下限は50%
 
         let currentRows = [];
         let draggedIndex = null;
@@ -1168,7 +1178,6 @@
                 importDropZone.style.borderColor = '#10b981';
                 if (e.dataTransfer.files.length) {
                     const file = e.dataTransfer.files[0];
-                    // 既存のインポート処理用イベントオブジェクトを擬似的に作成して実行
                     const fakeEvent = { target: { files: [file], value: '' } };
                     importProjectData(fakeEvent);
                 }
@@ -1477,63 +1486,109 @@
             const tr = inputEl.closest('tr');
             if (tr) {
                 const printSpan = tr.querySelector('.print-artist-text');
-                if (printSpan) printSpan.innerText = inputEl.value;
+                if (printSpan) {
+                    printSpan.innerText = inputEl.value;
+                    applyArtistScale(printSpan, inputEl.value);
+                }
+            }
+        }
+
+        /**
+         * テキストが指定の枠幅に収まるよう横幅スケール（scaleX）を計算して適用する
+         * 文字幅の縮小率は MIN_SCALE_X（0.5 = 50%）を下回らないように制限する
+         */
+        function applyTextScaleToFit(spanEl, text, {
+            maxWidth,
+            fontSize,
+            fontWeight,
+            fontFamily = "'Klee One', cursive, sans-serif",
+            minScale = MIN_SCALE_X
+        }) {
+            if (!spanEl) return;
+            if (!text) {
+                spanEl.style.transform = 'scaleX(1)';
+                return;
+            }
+
+            const measureSpan = document.createElement('span');
+            measureSpan.style.visibility = 'hidden';
+            measureSpan.style.position = 'absolute';
+            measureSpan.style.top = '-9999px';
+            measureSpan.style.left = '-9999px';
+            measureSpan.style.whiteSpace = 'pre';
+            measureSpan.style.fontSize = fontSize;
+            measureSpan.style.fontWeight = String(fontWeight);
+            measureSpan.style.fontFamily = fontFamily;
+            measureSpan.innerText = text;
+            document.body.appendChild(measureSpan);
+
+            const actualWidth = measureSpan.getBoundingClientRect().width || measureSpan.offsetWidth;
+            document.body.removeChild(measureSpan);
+
+            if (actualWidth > maxWidth && actualWidth > 0) {
+                const scale = Math.max(maxWidth / actualWidth, minScale);
+                spanEl.style.transform = `scaleX(${scale.toFixed(4)})`;
+            } else {
+                spanEl.style.transform = 'scaleX(1)';
             }
         }
 
         function applySongNameScale(spanEl, text) {
-            if (!text) {
-                spanEl.style.transform = 'scaleX(1)';
-                return;
-            }
-            const maxAllowWidth = 310;
-            const measureSpan = document.createElement('span');
-            measureSpan.style.visibility = 'hidden';
-            measureSpan.style.position = 'absolute';
-            measureSpan.style.whiteSpace = 'nowrap';
-            measureSpan.style.fontSize = '20px';
-            measureSpan.style.fontWeight = '900';
-            measureSpan.style.fontFamily = "'Klee One', cursive, sans-serif";
-            measureSpan.innerText = text;
-            document.body.appendChild(measureSpan);
-
-            const actualWidth = measureSpan.offsetWidth;
-            document.body.removeChild(measureSpan);
-
-            if (actualWidth > maxAllowWidth) {
-                const scale = maxAllowWidth / actualWidth;
-                spanEl.style.transform = `scaleX(${Math.max(scale, 0.5)})`;
-            } else {
-                spanEl.style.transform = 'scaleX(1)';
-            }
+            applyTextScaleToFit(spanEl, text, {
+                maxWidth: 310,
+                fontSize: '22px',
+                fontWeight: 900
+            });
         }
 
         function applySceneScale(spanEl, text) {
-            if (!text) {
-                spanEl.style.transform = 'scaleX(1)';
-                return;
-            }
-            const maxAllowWidth = 75;
-            const measureSpan = document.createElement('span');
-            measureSpan.style.visibility = 'hidden';
-            measureSpan.style.position = 'absolute';
-            measureSpan.style.whiteSpace = 'nowrap';
-            measureSpan.style.fontSize = '14px';
-            measureSpan.style.fontWeight = '700';
-            measureSpan.style.fontFamily = "'Klee One', cursive, sans-serif";
-            measureSpan.innerText = text;
-            document.body.appendChild(measureSpan);
+            applyTextScaleToFit(spanEl, text, {
+                maxWidth: 76,
+                fontSize: '14px',
+                fontWeight: 700
+            });
+        }
 
-            const actualWidth = measureSpan.offsetWidth;
-            document.body.removeChild(measureSpan);
+        function applyArtistScale(spanEl, text) {
+            const cell = spanEl ? spanEl.closest('td') : null;
+            const cellWidth = cell && cell.clientWidth > 0 ? cell.clientWidth - 8 : 220;
+            applyTextScaleToFit(spanEl, text, {
+                maxWidth: Math.max(cellWidth, 80),
+                fontSize: '16px',
+                fontWeight: 700
+            });
+        }
 
-            if (actualWidth > maxAllowWidth) {
-                const scale = maxAllowWidth / actualWidth;
-                spanEl.style.transform = `scaleX(${Math.max(scale, 0.5)})`;
-            } else {
-                spanEl.style.transform = 'scaleX(1)';
+        function applyCueScale(spanEl, text) {
+            applyTextScaleToFit(spanEl, text, {
+                maxWidth: 310,
+                fontSize: '14px',
+                fontWeight: 900
+            });
+        }
+
+        function refreshAllPrintScales() {
+            document.querySelectorAll('#playlist-tbody tr').forEach((tr) => {
+                const songSpan = tr.querySelector('.print-song-name');
+                if (songSpan) applySongNameScale(songSpan, songSpan.innerText || '');
+
+                const sceneSpan = tr.querySelector('.print-scene-text');
+                if (sceneSpan) applySceneScale(sceneSpan, sceneSpan.innerText || '');
+
+                const artistSpan = tr.querySelector('.print-artist-text');
+                if (artistSpan) applyArtistScale(artistSpan, artistSpan.innerText || '');
+
+                const cueSpan = tr.querySelector('.print-cue-subtext');
+                if (cueSpan) applyCueScale(cueSpan, cueSpan.innerText || '');
+            });
+
+            const memoTextarea = document.querySelector('.memo-textarea');
+            if (memoTextarea) {
+                updatePrintMemoBox(memoTextarea);
             }
         }
+
+        window.addEventListener('beforeprint', refreshAllPrintScales);
 
         function saveCurrentInputs() {
             const rows = document.querySelectorAll('#playlist-tbody tr');
@@ -1560,7 +1615,7 @@
         // プロジェクトデータの保存（エクスポート）と読み込み（インポート）
         // ==========================================
         function exportProjectData() {
-            saveCurrentInputs(); // 最新のDOM入力を反映
+            saveCurrentInputs();
 
             const projectData = {
                 version: "1.0",
@@ -1698,15 +1753,18 @@
             const lines = textarea.value.split('\n');
             const containerWidth = 260;
 
-            let baseFontSize = 13;
-            let minFontSize = 7;
+            const baseFontSize = 13;
+            const minFontSize = 7;
             let htmlContent = '';
             
             const measureSpan = document.createElement('span');
             measureSpan.style.visibility = 'hidden';
             measureSpan.style.position = 'absolute';
+            measureSpan.style.top = '-9999px';
+            measureSpan.style.left = '-9999px';
             measureSpan.style.whiteSpace = 'pre';
             measureSpan.style.fontFamily = "'Klee One', cursive, sans-serif";
+            measureSpan.style.fontWeight = '700';
             document.body.appendChild(measureSpan);
 
             for (let line of lines) {
@@ -1715,16 +1773,22 @@
                     continue;
                 }
 
-                measureSpan.innerText = line;
                 let currentSize = baseFontSize;
                 measureSpan.style.fontSize = currentSize + 'px';
+                measureSpan.innerText = line;
 
-                while (measureSpan.offsetWidth > containerWidth && currentSize > minFontSize) {
-                    currentSize -= 0.5;
+                while (measureSpan.getBoundingClientRect().width > containerWidth && currentSize > minFontSize) {
+                    currentSize = Math.max(minFontSize, +(currentSize - 0.5).toFixed(1));
                     measureSpan.style.fontSize = currentSize + 'px';
                 }
 
-                htmlContent += `<div style="font-size: ${currentSize}px; white-space: pre; line-height: 1.35; overflow: hidden; text-overflow: clip;">${escapeHtml(line)}</div>`;
+                const widthAtMinSize = measureSpan.getBoundingClientRect().width;
+                let scaleX = 1;
+                if (widthAtMinSize > containerWidth && widthAtMinSize > 0) {
+                    scaleX = Math.max(containerWidth / widthAtMinSize, MIN_SCALE_X);
+                }
+
+                htmlContent += `<div style="line-height: 1.35; overflow: hidden;"><span class="print-memo-line" style="font-size: ${currentSize}px; transform: scaleX(${scaleX.toFixed(4)});">${escapeHtml(line)}</span></div>`;
             }
 
             document.body.removeChild(measureSpan);
@@ -1798,12 +1862,12 @@
                                     <option value="">(選択)</option>
                                     ${optionsHtml}
                                 </select>
-                                <span class="print-scene-text">${sceneText}</span>
+                                <span class="print-scene-text">${escapeHtml(sceneText)}</span>
                             </td>
                             <td class="song-name-cell">
                                 <input type="text" class="song-name-input" value="${songName}" oninput="updateSongName(this, ${idx})" placeholder="曲名を入力...">
                                 <span class="print-song-name">${songName}</span>
-                                <span class="print-cue-subtext">${cueText}</span>
+                                <span class="print-cue-subtext">${escapeHtml(cueText)}</span>
                                 <div style="margin-top: 4px;">
                                     <select class="cue-select" onchange="updateCustomText(this, 'cue', ${idx})">
                                         <option value="">(再生指示を選択)</option>
@@ -1834,7 +1898,7 @@
             mainContent.innerHTML = html;
             controlsSection.style.display = 'flex';
 
-            currentRows.forEach((r, idx) => {
+            currentRows.forEach((r) => {
                 if (!r.isBlank) {
                     const tr = document.querySelector(`tr[data-id="${r.id}"]`);
                     if (tr) {
@@ -1843,6 +1907,12 @@
 
                         const printSceneSpan = tr.querySelector('.print-scene-text');
                         if (printSceneSpan) applySceneScale(printSceneSpan, r.scene || '');
+
+                        const printArtistSpan = tr.querySelector('.print-artist-text');
+                        if (printArtistSpan) applyArtistScale(printArtistSpan, r.artist || '');
+
+                        const printCueSpan = tr.querySelector('.print-cue-subtext');
+                        if (printCueSpan) applyCueScale(printCueSpan, r.cue || '');
                     }
                 }
             });
@@ -1858,7 +1928,7 @@
                 setTimeout(() => updatePrintMemoBox(memoTextarea), 50);
             }
 
-            currentRows.forEach((r, idx) => {
+            currentRows.forEach((r) => {
                 if (!r.isBlank) {
                     const tr = document.querySelector(`tr[data-id="${r.id}"]`);
                     if (tr) {
@@ -1886,6 +1956,11 @@
                                 cueSelect.insertBefore(customOpt, cueSelect.lastElementChild);
                             }
                             cueSelect.value = r.cue;
+                            const cueSubSpan = tr.querySelector('.print-cue-subtext');
+                            if (cueSubSpan) {
+                                cueSubSpan.innerText = r.cue;
+                                applyCueScale(cueSubSpan, r.cue);
+                            }
                         }
                     }
                 }
@@ -1933,7 +2008,10 @@
                 selectEl.value = "";
                 const tr = selectEl.closest('tr');
                 const cueSubSpan = tr.querySelector('.print-cue-subtext');
-                if (cueSubSpan) cueSubSpan.innerText = "";
+                if (cueSubSpan) {
+                    cueSubSpan.innerText = "";
+                    cueSubSpan.style.transform = 'scaleX(1)';
+                }
             } else {
                 if (type === 'scene') {
                     currentRows[idx].scene = selectEl.value;
@@ -1945,7 +2023,10 @@
                     currentRows[idx].cue = selectEl.value;
                     const tr = selectEl.closest('tr');
                     const cueSubSpan = tr.querySelector('.print-cue-subtext');
-                    if (cueSubSpan) cueSubSpan.innerText = selectEl.value;
+                    if (cueSubSpan) {
+                        cueSubSpan.innerText = selectEl.value;
+                        applyCueScale(cueSubSpan, selectEl.value);
+                    }
                 }
             }
         }
@@ -2075,7 +2156,10 @@
 
                 const tr = activeTimeSelectEl.closest('tr');
                 const cueSubSpan = tr.querySelector('.print-cue-subtext');
-                if (cueSubSpan) cueSubSpan.innerText = finalVal;
+                if (cueSubSpan) {
+                    cueSubSpan.innerText = finalVal;
+                    applyCueScale(cueSubSpan, finalVal);
+                }
             } else if (!isConfirmed && activeTimeSelectEl) {
                 activeTimeSelectEl.value = currentRows[activeTimeRowIdx].cue || "";
             }
@@ -2093,7 +2177,7 @@
                 const handle = row.querySelector('.drag-handle');
                 if (!handle) return;
 
-                handle.addEventListener('dragstart', (e) => {
+                handle.addEventListener('dragstart', () => {
                     draggedIndex = parseInt(row.getAttribute('data-index'));
                     setTimeout(() => row.classList.add('dragging'), 0);
                 });
