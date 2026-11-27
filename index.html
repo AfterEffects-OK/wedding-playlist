@@ -862,8 +862,9 @@
 
             input.song-name-input, input.artist-input { display: none !important; }
 
+            /* 曲名（1行目）と赤文字の再生指示（2行目・曲名の直下）を縦に配置 */
             .print-song-name {
-                display: inline-block !important;
+                display: block !important;
                 font-size: 22px !important;
                 font-weight: 900 !important;
                 color: #000 !important;
@@ -884,12 +885,12 @@
             }
 
             .print-cue-subtext {
-                display: inline-block !important;
+                display: block !important;
                 font-size: 14px !important;
                 font-weight: 900 !important;
                 color: #dc2626 !important;
                 font-family: 'Klee One', cursive, sans-serif !important;
-                margin-top: -1px !important;
+                margin-top: 2px !important;
                 line-height: 1.1 !important;
                 white-space: nowrap !important;
                 transform-origin: left center !important;
